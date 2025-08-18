@@ -14,12 +14,13 @@ export class DocumentService {
     
     try {
       if (mimetype === 'application/pdf') {
-        // For PDF parsing, we'll use pdf-parse when available
-        // For now, we'll throw an error to indicate PDF parsing needs to be implemented
-        throw new Error('PDF parsing requires pdf-parse library to be installed');
+        const pdfParse = await import('pdf-parse');
+        const data = await (pdfParse as any).default(buffer);
+        content = data.text;
       } else if (mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        // For DOCX parsing, we'll use mammoth when available
-        throw new Error('DOCX parsing requires mammoth library to be installed');
+        const mammoth = await import('mammoth');
+        const result = await mammoth.extractRawText({ buffer });
+        content = result.value;
       } else if (mimetype === 'text/plain') {
         content = buffer.toString('utf-8');
       } else {
