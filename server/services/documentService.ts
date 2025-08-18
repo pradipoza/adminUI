@@ -12,11 +12,20 @@ export class DocumentService {
     const { originalname, buffer, mimetype } = file;
     let content = '';
     
+    console.log(`Processing file: ${originalname}, type: ${mimetype}, size: ${buffer.length} bytes`);
+    
     try {
       if (mimetype === 'application/pdf') {
-        const pdfParse = await import('pdf-parse');
-        const data = await (pdfParse as any).default(buffer);
-        content = data.text;
+        try {
+          // Import pdf-parse using require syntax for better compatibility
+          const pdfParse = require('pdf-parse');
+          const data = await pdfParse(buffer);
+          content = data.text;
+          console.log(`Successfully parsed PDF, extracted ${content.length} characters`);
+        } catch (pdfError) {
+          console.error('PDF parsing error:', pdfError);
+          throw new Error(`PDF parsing failed: ${(pdfError as any).message}`);
+        }
       } else if (mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
         const mammoth = await import('mammoth');
         const result = await mammoth.extractRawText({ buffer });
