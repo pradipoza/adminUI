@@ -1,5 +1,8 @@
 import { storage } from "../storage";
 import { openaiService } from "./openaiService";
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
 
 export interface ParsedDocument {
   title: string;
@@ -17,7 +20,6 @@ export class DocumentService {
     try {
       if (mimetype === 'application/pdf') {
         try {
-          // Import pdf-parse using require syntax for better compatibility
           const pdfParse = require('pdf-parse');
           const data = await pdfParse(buffer);
           content = data.text;
@@ -27,9 +29,15 @@ export class DocumentService {
           throw new Error(`PDF parsing failed: ${(pdfError as any).message}`);
         }
       } else if (mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        const mammoth = await import('mammoth');
-        const result = await mammoth.extractRawText({ buffer });
-        content = result.value;
+        try {
+          const mammoth = await import('mammoth');
+          const result = await mammoth.extractRawText({ buffer });
+          content = result.value;
+          console.log(`Successfully parsed DOCX, extracted ${content.length} characters`);
+        } catch (docxError) {
+          console.error('DOCX parsing error:', docxError);
+          throw new Error(`DOCX parsing failed: ${(docxError as any).message}`);
+        }
       } else if (mimetype === 'text/plain') {
         content = buffer.toString('utf-8');
       } else {
