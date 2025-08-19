@@ -50,7 +50,7 @@ export const chunks = pgTable("chunks", {
   id: serial("id").primaryKey(),
   documentId: integer("document_id").references(() => documents.id, { onDelete: 'cascade' }).notNull(),
   chunkText: text("chunk_text").notNull(),
-  embedding: text("embedding"), // Store as JSON string for n8n compatibility
+  embedding: varchar("embedding", { length: 65535 }), // PGVector column (vector type)
   createdAt: timestamp("created_at").defaultNow(),
 });
 
