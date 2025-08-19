@@ -88,7 +88,7 @@ export class DocumentService {
         await storage.createChunk({
           documentId: document.id,
           chunkText,
-          embeddingVector: JSON.stringify(embedding),
+          embedding: JSON.stringify(embedding),
         });
         chunkCount++;
       } catch (error) {

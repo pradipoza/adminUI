@@ -50,7 +50,7 @@ export const chunks = pgTable("chunks", {
   id: serial("id").primaryKey(),
   documentId: integer("document_id").references(() => documents.id, { onDelete: 'cascade' }).notNull(),
   chunkText: text("chunk_text").notNull(),
-  embeddingVector: text("embedding_vector"), // Store as JSON string since Prisma doesn't support vector type natively
+  embedding: text("embedding"), // Store as JSON string for n8n compatibility
   createdAt: timestamp("created_at").defaultNow(),
 });
 
