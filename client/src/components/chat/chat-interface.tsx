@@ -21,7 +21,16 @@ export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
   const [showChat, setShowChat] = useState(true);
 
   const { data: messages, isLoading } = useQuery({
-    queryKey: ["/api/messages", { session_id: sessionId }],
+    queryKey: ["/api/messages", sessionId],
+    queryFn: async () => {
+      const url = new URL('/api/messages', window.location.origin);
+      url.searchParams.set('session_id', sessionId);
+      const response = await fetch(url.toString());
+      if (!response.ok) {
+        throw new Error(`${response.status}: ${response.statusText}`);
+      }
+      return response.json();
+    },
     enabled: !!sessionId,
   });
 

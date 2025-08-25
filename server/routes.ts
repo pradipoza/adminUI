@@ -173,14 +173,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Message and sessionId are required" });
       }
 
-      // Get all chunks for context (simplified - in production you'd want similarity search)
-      const documents = await storage.getDocuments();
-      let context = '';
-      
-      for (const doc of documents.slice(0, 3)) { // Limit to first 3 docs for context
-        const chunks = await storage.getChunksByDocumentId(doc.id);
-        context += chunks.map(c => c.chunkText).join('\n') + '\n';
-      }
+      // Get all chunks and use similarity search to find relevant context
+      const allChunks = await storage.getAllChunks();
+      const validChunks = allChunks.filter(chunk => chunk.embedding !== null) as { chunkText: string; embedding: string }[];
+      const relevantChunks = await openaiService.searchSimilarChunks(message, validChunks);
+      const context = relevantChunks.join('\n\n');
 
       const systemPrompt = `You are a helpful customer service assistant. Use the following context to answer questions when relevant:\n\n${context}`;
       

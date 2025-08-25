@@ -29,6 +29,7 @@ export interface IStorage {
   
   // Chunk operations
   getChunksByDocumentId(documentId: number): Promise<Chunk[]>;
+  getAllChunks(): Promise<Chunk[]>;
   createChunk(chunk: InsertChunk): Promise<Chunk>;
   deleteChunksByDocumentId(documentId: number): Promise<void>;
   
@@ -89,6 +90,10 @@ export class DatabaseStorage implements IStorage {
   // Chunk operations
   async getChunksByDocumentId(documentId: number): Promise<Chunk[]> {
     return await db.select().from(chunks).where(eq(chunks.documentId, documentId));
+  }
+
+  async getAllChunks(): Promise<Chunk[]> {
+    return await db.select().from(chunks);
   }
 
   async createChunk(chunk: InsertChunk): Promise<Chunk> {
