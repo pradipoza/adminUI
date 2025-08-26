@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp AI Chatbot Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif']
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.3s ease-out'
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body class="bg-slate-50 font-inter">
+    <!-- Login Page -->
+    <div id="login-page" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
+        <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md border border-slate-200">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-blue-500 rounded-xl mx-auto mb-4 flex items-center justify-center">
+                    <i data-lucide="message-circle" class="w-8 h-8 text-white"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-slate-900 mb-2">Admin Dashboard</h1>
+                <p class="text-slate-500">WhatsApp AI Chatbot Management</p>
+            </div>
+            
+            <form class="space-y-6">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-slate-700 mb-2">Email</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        data-mock="true"
+                        placeholder="admin@example.com"
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                </div>
+                
+                <div>
+                    <label for="password" class="block text-sm font-medium text-slate-700 mb-2">Password</label>
+                    <input 
+                        type="password" 
+                        id="password"
+                        data-mock="true"
+                        placeholder="••••••••"
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                </div>
+                
+                <button 
+                    type="button" 
+                    onclick="showDashboard()"
+                    class="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                    data-event="click:handleLogin" 
+                    data-implementation="Validate credentials via NextAuth.js"
+                >
+                    Sign In
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="hidden min-h-screen bg-slate-50">
+        <!-- Sidebar -->
+        <div class="fixed inset-y-0 left-0 w-64 bg-white border-r border-slate-200 z-40">
+            <div class="p-6 border-b border-slate-200">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                        <i data-lucide="message-circle" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-semibold text-slate-900">AI Chatbot</h1>
+                        <p class="text-sm text-slate-500">Admin Panel</p>
+                    </div>
+                </div>
+            </div>
+            
+            <nav class="p-4">
+                <ul class="space-y-2">
+                    <li>
+                        <a href="#" onclick="showPage('overview')" class="nav-link active flex items-center space-x-3 px-3 py-2 rounded-lg bg-blue-50 text-blue-700">
+                            <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                            <span>Overview</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="showPage('documents')" class="nav-link flex items-center space-x-3 px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-50">
+                            <i data-lucide="file-text" class="w-5 h-5"></i>
+                            <span>Documents</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="showPage('messages')" class="nav-link flex items-center space-x-3 px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-50">
+                            <i data-lucide="message-square" class="w-5 h-5"></i>
+                            <span>Messages</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="showPage('analytics')" class="nav-link flex items-center space-x-3 px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-50">
+                            <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                            <span>Analytics</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="showPage('settings')" class="nav-link flex items-center space-x-3 px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-50">
+                            <i data-lucide="settings" class="w-5 h-5"></i>
+                            <span>Settings</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            
+            <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-200">
+                <button 
+                    onclick="showLogin()" 
+                    class="flex items-center space-x-3 px-3 py-2 text-slate-700 hover:bg-slate-50 rounded-lg w-full"
+                    data-event="click:handleLogout"
+                    data-implementation="Sign out via NextAuth.js"
+                >
+                    <i data-lucide="log-out" class="w-5 h-5"></i>
+                    <span>Sign Out</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="ml-64 min-h-screen">
+            <!-- Header -->
+            <header class="bg-white border-b border-slate-200 px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 id="page-title" class="text-xl font-semibold text-slate-900">Overview</h2>
+                        <p id="page-subtitle" class="text-slate-500">Monitor your AI chatbot performance</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i data-lucide="search" class="w-5 h-5 text-slate-400"></i>
+                            </div>
+                            <input 
+                                type="search" 
+                                placeholder="Search..."
+                                data-mock="true"
+                                class="pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-slate-300 rounded-full"></div>
+                            <span class="text-sm font-medium text-slate-700" data-bind="user.name">Admin User</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <main class="p-6">
+                <!-- Overview Page -->
+                <div id="overview-page" class="page-content">
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-slate-500">Total Messages</p>
+                                    <p class="text-2xl font-bold text-slate-900" data-bind="stats.totalMessages">12,847</p>
+                                    <p class="text-sm text-emerald-600">+12% from last month</p>
+                                </div>
+                                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <i data-lucide="message-circle" class="w-6 h-6 text-blue-600"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-slate-500">Active Sessions</p>
+                                    <p class="text-2xl font-bold text-slate-900" data-bind="stats.activeSessions">2,381</p>
+                                    <p class="text-sm text-emerald-600">+8% from last week</p>
+                                </div>
+                                <div class="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+                                    <i data-lucide="users" class="w-6 h-6 text-emerald-600"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-slate-500">Documents</p>
+                                    <p class="text-2xl font-bold text-slate-900" data-bind="stats.documentsCount">147</p>
+                                    <p class="text-sm text-slate-500">Knowledge base files</p>
+                                </div>
+                                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                                    <i data-lucide="file-text" class="w-6 h-6 text-purple-600"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-slate-500">Response Time</p>
+                                    <p class="text-2xl font-bold text-slate-900">1.2s</p>
+                                    <p class="text-sm text-emerald-600">-0.3s improvement</p>
+                                </div>
+                                <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                                    <i data-lucide="zap" class="w-6 h-6 text-orange-600"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Row -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-4">Message Volume</h3>
+                            <canvas id="messagesChart" width="400" height="200"></canvas>
+                        </div>
+                        
+                        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-4">Top Active Sessions</h3>
+                            <div class="space-y-4">
+                                <!-- @MAP: topSessions.map(session => ( -->
+                                <div class="flex items-center justify-between py-2">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center">
+                                            <span class="text-xs font-medium text-slate-600" data-bind="session.avatar">+1</span>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-slate-900" data-bind="session.id">+1234567890</p>
+                                            <p class="text-sm text-slate-500" data-bind="session.lastActivity">2 hours ago</p>
+                                        </div>
+                                    </div>
+                                    <span class="text-sm font-medium text-slate-600" data-bind="session.messageCount">247 msgs</span>
+                                </div>
+                                <!-- @END_MAP )) -->
+                                
+                                <div class="flex items-center justify-between py-2">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center">
+                                            <span class="text-xs font-medium text-slate-600">+2</span>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-slate-900">+9876543210</p>
+                                            <p class="text-sm text-slate-500">5 hours ago</p>
+                                        </div>
+                                    </div>
+                                    <span class="text-sm font-medium text-slate-600">189 msgs</span>
+                                </div>
+                                
+                                <div class="flex items-center justify-between py-2">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center">
+                                            <span class="text-xs font-medium text-slate-600">+3</span>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-slate-900">+5555123456</p>
+                                            <p class="text-sm text-slate-500">1 day ago</p>
+                                        </div>
+                                    </div>
+                                    <span class="text-sm font-medium text-slate-600">156 msgs</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Activity -->
+                    <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                        <h3 class="text-lg font-semibold text-slate-900 mb-4">Recent Activity</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center space-x-4 py-3 border-b border-slate-100 last:border-b-0">
+                                <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-slate-900" data-mock="true">New document uploaded: "Product FAQ.pdf"</p>
+                                    <p class="text-sm text-slate-500">5 minutes ago</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-4 py-3 border-b border-slate-100 last:border-b-0">
+                                <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-slate-900" data-mock="true">Session +1234567890 started conversation</p>
+                                    <p class="text-sm text-slate-500">12 minutes ago</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-4 py-3 border-b border-slate-100 last:border-b-0">
+                                <div class="w-2 h-2 bg-purple-500 rounded-full"></div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-slate-900" data-mock="true">Knowledge base updated with 15 new chunks</p>
+                                    <p class="text-sm text-slate-500">1 hour ago</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Documents Page -->
+                <div id="documents-page" class="page-content hidden">
+                    <div class="mb-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-xl font-semibold text-slate-900">Knowledge Base Documents</h2>
+                                <p class="text-slate-500">Manage your AI chatbot's knowledge base</p>
+                            </div>
+                            <button 
+                                onclick="openUploadModal()" 
+                                class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center space-x-2"
+                                data-event="click:openUploadModal"
+                                data-implementation="Open file upload dialog with support for PDF/DOCX/TXT"
+                            >
+                                <i data-lucide="upload" class="w-4 h-4"></i>
+                                <span>Upload Document</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Documents Table -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+                        <div class="px-6 py-4 border-b border-slate-200">
+                            <div class="flex items-center justify-between">
+                                <h3 class="font-semibold text-slate-900">Documents</h3>
+                                <div class="flex items-center space-x-2">
+                                    <input 
+                                        type="search" 
+                                        placeholder="Search documents..."
+                                        data-mock="true"
+                                        class="px-3 py-1 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    >
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Document</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Type</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Chunks</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Uploaded</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-slate-200">
+                                    <!-- @MAP: documents.map(doc => ( -->
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                                                    <i data-lucide="file-text" class="w-5 h-5 text-blue-600"></i>
+                                                </div>
+                                                <div>
+                                                    <p class="text-sm font-medium text-slate-900" data-bind="doc.title" data-mock="true">Product Documentation.pdf</p>
+                                                    <p class="text-sm text-slate-500" data-bind="doc.filename" data-mock="true">product-docs.pdf</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold bg-slate-100 text-slate-800 rounded-full" data-bind="doc.type" data-mock="true">PDF</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900" data-bind="doc.chunkCount" data-mock="true">47</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500" data-bind="doc.createdAt" data-mock="true">2 hours ago</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <div class="flex items-center space-x-2">
+                                                <button class="text-blue-600 hover:text-blue-900" data-event="click:viewDocument">View</button>
+                                                <button class="text-red-600 hover:text-red-900" data-event="click:deleteDocument">Delete</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <!-- @END_MAP )) -->
+                                    
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                                                    <i data-lucide="file-text" class="w-5 h-5 text-purple-600"></i>
+                                                </div>
+                                                <div>
+                                                    <p class="text-sm font-medium text-slate-900">FAQ Guide.docx</p>
+                                                    <p class="text-sm text-slate-500">faq-guide.docx</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold bg-slate-100 text-slate-800 rounded-full">DOCX</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">23</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">1 day ago</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <div class="flex items-center space-x-2">
+                                                <button class="text-blue-600 hover:text-blue-900">View</button>
+                                                <button class="text-red-600 hover:text-red-900">Delete</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center mr-3">
+                                                    <i data-lucide="file-text" class="w-5 h-5 text-emerald-600"></i>
+                                                </div>
+                                                <div>
+                                                    <p class="text-sm font-medium text-slate-900">Support Guidelines.txt</p>
+                                                    <p class="text-sm text-slate-500">support-guidelines.txt</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold bg-slate-100 text-slate-800 rounded-full">TXT</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">12</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">3 days ago</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <div class="flex items-center space-x-2">
+                                                <button class="text-blue-600 hover:text-blue-900">View</button>
+                                                <button class="text-red-600 hover:text-red-900">Delete</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Messages Page -->
+                <div id="messages-page" class="page-content hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-1 gap-6 h-full">
+                        <!-- Sessions List -->
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+                            <div class="px-6 py-4 border-b border-slate-200">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="font-semibold text-slate-900">Message History</h3>
+                                    <div class="flex items-center space-x-2">
+                                        <select class="px-3 py-1 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" data-mock="true">
+                                            <option>All Sessions</option>
+                                            <option>+1234567890</option>
+                                            <option>+9876543210</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="p-6">
+                                <!-- Session Selector -->
+                                <div class="mb-6">
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <!-- @MAP: sessions.map(session => ( -->
+                                        <div class="session-card cursor-pointer border border-slate-200 rounded-lg p-4 hover:border-blue-300 transition-colors" onclick="showChat('+1234567890')" data-event="click:selectSession">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center">
+                                                    <i data-lucide="user" class="w-5 h-5 text-slate-600"></i>
+                                                </div>
+                                                <div>
+                                                    <p class="font-medium text-slate-900" data-bind="session.id" data-mock="true">+1234567890</p>
+                                                    <p class="text-sm text-slate-500" data-bind="session.messageCount" data-mock="true">247 messages</p>
+                                                    <p class="text-xs text-slate-400" data-bind="session.lastActivity" data-mock="true">2 hours ago</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- @END_MAP )) -->
+                                        
+                                        <div class="session-card cursor-pointer border border-slate-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center">
+                                                    <i data-lucide="user" class="w-5 h-5 text-slate-600"></i>
+                                                </div>
+                                                <div>
+                                                    <p class="font-medium text-slate-900">+9876543210</p>
+                                                    <p class="text-sm text-slate-500">189 messages</p>
+                                                    <p class="text-xs text-slate-400">5 hours ago</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="session-card cursor-pointer border border-slate-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center">
+                                                    <i data-lucide="user" class="w-5 h-5 text-slate-600"></i>
+                                                </div>
+                                                <div>
+                                                    <p class="font-medium text-slate-900">+5555123456</p>
+                                                    <p class="text-sm text-slate-500">156 messages</p>
+                                                    <p class="text-xs text-slate-400">1 day ago</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Chat Interface -->
+                                <div id="chat-interface" class="hidden">
+                                    <div class="border border-slate-200 rounded-lg h-96 flex flex-col">
+                                        <div class="bg-slate-50 px-4 py-3 border-b border-slate-200 rounded-t-lg">
+                                            <div class="flex items-center justify-between">
+                                                <div class="flex items-center space-x-3">
+                                                    <div class="w-8 h-8 bg-slate-300 rounded-full flex items-center justify-center">
+                                                        <i data-lucide="user" class="w-4 h-4 text-slate-600"></i>
+                                                    </div>
+                                                    <div>
+                                                        <p class="font-medium text-slate-900" id="chat-session-id">+1234567890</p>
+                                                        <p class="text-sm text-slate-500">WhatsApp Session</p>
+                                                    </div>
+                                                </div>
+                                                <button onclick="hideChat()" class="text-slate-400 hover:text-slate-600">
+                                                    <i data-lucide="x" class="w-5 h-5"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="flex-1 p-4 overflow-y-auto bg-slate-50">
+                                            <!-- @FUNCTIONALITY: This chat interface displays WhatsApp conversation history with proper message alignment -->
+                                            <div class="space-y-4">
+                                                <!-- User Message (Left-aligned) -->
+                                                <div class="flex">
+                                                    <div class="max-w-xs lg:max-w-md px-4 py-2 rounded-lg bg-white border border-slate-200 shadow-sm">
+                                                        <p class="text-sm text-slate-900" data-mock="true">Hi, I need help with my order</p>
+                                                        <p class="text-xs text-slate-500 mt-1">10:30 AM</p>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- AI Response (Right-aligned) -->
+                                                <div class="flex justify-end">
+                                                    <div class="max-w-xs lg:max-w-md px-4 py-2 rounded-lg bg-blue-500 text-white shadow-sm">
+                                                        <p class="text-sm" data-mock="true">Hello! I'd be happy to help you with your order. Could you please provide your order number?</p>
+                                                        <p class="text-xs text-blue-200 mt-1">10:31 AM</p>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- User Message -->
+                                                <div class="flex">
+                                                    <div class="max-w-xs lg:max-w-md px-4 py-2 rounded-lg bg-white border border-slate-200 shadow-sm">
+                                                        <p class="text-sm text-slate-900" data-mock="true">My order number is #12345</p>
+                                                        <p class="text-xs text-slate-500 mt-1">10:32 AM</p>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- AI Response -->
+                                                <div class="flex justify-end">
+                                                    <div class="max-w-xs lg:max-w-md px-4 py-2 rounded-lg bg-blue-500 text-white shadow-sm">
+                                                        <p class="text-sm" data-mock="true">Thank you! I found your order #12345. It was shipped yesterday and should arrive within 2-3 business days. Your tracking number is TR123456789.</p>
+                                                        <p class="text-xs text-blue-200 mt-1">10:33 AM</p>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- User Message -->
+                                                <div class="flex">
+                                                    <div class="max-w-xs lg:max-w-md px-4 py-2 rounded-lg bg-white border border-slate-200 shadow-sm">
+                                                        <p class="text-sm text-slate-900" data-mock="true">Perfect! Thank you for your help</p>
+                                                        <p class="text-xs text-slate-500 mt-1">10:34 AM</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Empty State -->
+                                <div id="chat-empty-state" class="text-center py-12">
+                                    <div class="w-16 h-16 bg-slate-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                                        <i data-lucide="message-square" class="w-8 h-8 text-slate-400"></i>
+                                    </div>
+                                    <h3 class="text-lg font-medium text-slate-900 mb-2">Select a Session</h3>
+                                    <p class="text-slate-500">Choose a session above to view the conversation history</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics Page -->
+                <div id="analytics-page" class="page-content hidden">
+                    <!-- Time Range Selector -->
+                    <div class="mb-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-xl font-semibold text-slate-900">Analytics Dashboard</h2>
+                                <p class="text-slate-500">Monitor chatbot performance and usage metrics</p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <select class="px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" data-mock="true" data-implementation="Filter analytics by time range">
+                                    <option>Last 7 days</option>
+                                    <option>Last 30 days</option>
+                                    <option>Last 90 days</option>
+                                    <option>This year</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Key Metrics -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-sm font-medium text-slate-500">Total Messages</h3>
+                                <i data-lucide="trending-up" class="w-4 h-4 text-emerald-500"></i>
+                            </div>
+                            <p class="text-3xl font-bold text-slate-900" data-bind="analytics.totalMessages">12,847</p>
+                            <p class="text-sm text-emerald-600 flex items-center mt-2">
+                                <i data-lucide="arrow-up" class="w-4 h-4 mr-1"></i>
+                                +12% from last period
+                            </p>
+                        </div>
+
+                        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-sm font-medium text-slate-500">Avg Response Time</h3>
+                                <i data-lucide="clock" class="w-4 h-4 text-blue-500"></i>
+                            </div>
+                            <p class="text-3xl font-bold text-slate-900" data-bind="analytics.avgResponseTime">1.2s</p>
+                            <p class="text-sm text-emerald-600 flex items-center mt-2">
+                                <i data-lucide="arrow-down" class="w-4 h-4 mr-1"></i>
+                                -0.3s improvement
+                            </p>
+                        </div>
+
+                        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-sm font-medium text-slate-500">Active Sessions</h3>
+                                <i data-lucide="users" class="w-4 h-4 text-purple-500"></i>
+                            </div>
+                            <p class="text-3xl font-bold text-slate-900" data-bind="analytics.activeSessions">2,381</p>
+                            <p class="text-sm text-emerald-600 flex items-center mt-2">
+                                <i data-lucide="arrow-up" class="w-4 h-4 mr-1"></i>
+                                +8% from last week
+                            </p>
+                        </div>
+
+                        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-sm font-medium text-slate-500">Success Rate</h3>
+                                <i data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i>
+                            </div>
+                            <p class="text-3xl font-bold text-slate-900" data-bind="analytics.successRate">94.2%</p>
+                            <p class="text-sm text-emerald-600 flex items-center mt-2">
+                                <i data-lucide="arrow-up" class="w-4 h-4 mr-1"></i>
+                                +2.1% improvement
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Charts -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-4">Daily Message Volume</h3>
+                            <canvas id="dailyChart" width="400" height="250"></canvas>
+                        </div>
+
+                        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-4">Response Time Distribution</h3>
+                            <canvas id="responseTimeChart" width="400" height="250"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Usage Patterns -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-4">Peak Hours</h3>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-slate-600">9:00 AM - 10:00 AM</span>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-24 bg-slate-200 rounded-full h-2">
+                                            <div class="bg-blue-500 h-2 rounded-full" style="width: 85%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium text-slate-900">847</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-slate-600">2:00 PM - 3:00 PM</span>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-24 bg-slate-200 rounded-full h-2">
+                                            <div class="bg-blue-500 h-2 rounded-full" style="width: 72%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium text-slate-900">724</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-slate-600">6:00 PM - 7:00 PM</span>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-24 bg-slate-200 rounded-full h-2">
+                                            <div class="bg-blue-500 h-2 rounded-full" style="width: 68%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium text-slate-900">681</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-4">Common Topics</h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-slate-600">Order Status</span>
+                                    <span class="text-sm font-medium text-slate-900">34%</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-slate-600">Product Information</span>
+                                    <span class="text-sm font-medium text-slate-900">28%</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-slate-600">Technical Support</span>
+                                    <span class="text-sm font-medium text-slate-900">19%</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-slate-600">Billing Questions</span>
+                                    <span class="text-sm font-medium text-slate-900">12%</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-slate-600">Other</span>
+                                    <span class="text-sm font-medium text-slate-900">7%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-4">Session Duration</h3>
+                            <div class="space-y-4">
+                                <div class="text-center">
+                                    <p class="text-3xl font-bold text-slate-900">4.2m</p>
+                                    <p class="text-sm text-slate-500">Average Duration</p>
+                                </div>
+                                <div class="space-y-2">
+                                    <div class="flex items-center justify-between text-sm">
+                                        <span class="text-slate-600">< 1 minute</span>
+                                        <span class="font-medium">12%</span>
+                                    </div>
+                                    <div class="flex items-center justify-between text-sm">
+                                        <span class="text-slate-600">1-5 minutes</span>
+                                        <span class="font-medium">58%</span>
+                                    </div>
+                                    <div class="flex items-center justify-between text-sm">
+                                        <span class="text-slate-600">5-10 minutes</span>
+                                        <span class="font-medium">24%</span>
+                                    </div>
+                                    <div class="flex items-center justify-between text-sm">
+                                        <span class="text-slate-600">> 10 minutes</span>
+                                        <span class="font-medium">6%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Page -->
+                <div id="settings-page" class="page-content hidden">
+                    <div class="max-w-4xl">
+                        <div class="mb-6">
+                            <h2 class="text-xl font-semibold text-slate-900">Settings</h2>
+                            <p class="text-slate-500">Configure your WhatsApp AI chatbot settings</p>
+                        </div>
+
+                        <div class="space-y-6">
+                            <!-- API Configuration -->
+                            <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                                <h3 class="text-lg font-semibold text-slate-900 mb-4">API Configuration</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">OpenAI API Key</label>
+                                        <input 
+                                            type="password" 
+                                            value="sk-••••••••••••••••••••" 
+                                            data-mock="true"
+                                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Model</label>
+                                        <select class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" data-mock="true">
+                                            <option>gpt-4-turbo</option>
+                                            <option>gpt-3.5-turbo</option>
+                                            <option>gpt-4</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Chatbot Behavior -->
+                            <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                                <h3 class="text-lg font-semibold text-slate-900 mb-4">Chatbot Behavior</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">System Prompt</label>
+                                        <textarea 
+                                            rows="4" 
+                                            data-mock="true"
+                                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            placeholder="You are a helpful customer service assistant..."
+                                        >You are a helpful customer service assistant for our company. Answer questions based on the knowledge base and be polite and professional.</textarea>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-slate-700 mb-2">Max Response Length</label>
+                                            <input 
+                                                type="number" 
+                                                value="500" 
+                                                data-mock="true"
+                                                class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            >
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-slate-700 mb-2">Temperature</label>
+                                            <input 
+                                                type="range" 
+                                                min="0" 
+                                                max="2" 
+                                                step="0.1" 
+                                                value="0.7" 
+                                                data-mock="true"
+                                                class="w-full"
+                                            >
+                                            <div class="flex justify-between text-xs text-slate-500 mt-1">
+                                                <span>Conservative</span>
+                                                <span>Creative</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Database Settings -->
+                            <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                                <h3 class="text-lg font-semibold text-slate-900 mb-4">Database Settings</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">PostgreSQL Connection</label>
+                                        <input 
+                                            type="text" 
+                                            value="postgresql://user:••••@localhost:5432/chatbot_db" 
+                                            data-mock="true"
+                                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="flex items-center space-x-2">
+                                                <input type="checkbox" checked data-mock="true" class="rounded border-slate-300">
+                                                <span class="text-sm text-slate-700">Enable pgvector extension</span>
+                                            </label>
+                                        </div>
+                                        <div>
+                                            <label class="flex items-center space-x-2">
+                                                <input type="checkbox" checked data-mock="true" class="rounded border-slate-300">
+                                                <span class="text-sm text-slate-700">Auto-backup messages</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Save Settings -->
+                            <div class="flex justify-end">
+                                <button 
+                                    class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                                    data-event="click:saveSettings"
+                                    data-implementation="Save all configuration settings to database"
+                                >
+                                    Save Settings
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div id="upload-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-slate-900">Upload Document</h3>
+                <button onclick="closeUploadModal()" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center mb-4">
+                <i data-lucide="upload-cloud" class="w-12 h-12 text-slate-400 mx-auto mb-4"></i>
+                <p class="text-slate-600 mb-2">Drag and drop your file here</p>
+                <p class="text-sm text-slate-500 mb-4">or click to browse</p>
+                <input 
+                    type="file" 
+                    accept=".pdf,.docx,.txt" 
+                    data-implementation="Handle file upload with parsing via pdf-parse, mammoth, or fs.readFile"
+                    class="hidden" 
+                    id="file-input"
+                >
+                <button onclick="document.getElementById('file-input').click()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                    Choose File
+                </button>
+            </div>
+            
+            <div class="text-sm text-slate-500 mb-4">
+                Supported formats: PDF, DOCX, TXT (Max 10MB)
+            </div>
+            
+            <div class="flex space-x-3">
+                <button onclick="closeUploadModal()" class="flex-1 px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50">
+                    Cancel
+                </button>
+                <button 
+                    class="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                    data-event="click:uploadDocument"
+                    data-implementation="Process file, extract text, chunk, embed via OpenAI API, store in DB"
+                >
+                    Upload
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Navigation and page management
+        function showLogin() {
+            document.getElementById('login-page').classList.remove('hidden');
+            document.getElementById('dashboard').classList.add('hidden');
+        }
+
+        function showDashboard() {
+            document.getElementById('login-page').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            showPage('overview');
+        }
+
+        function showPage(pageName) {
+            // Hide all pages
+            const pages = document.querySelectorAll('.page-content');
+            pages.forEach(page => page.classList.add('hidden'));
+            
+            // Show selected page
+            document.getElementById(pageName + '-page').classList.remove('hidden');
+            
+            // Update navigation
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                link.classList.remove('active', 'bg-blue-50', 'text-blue-700');
+                link.classList.add('text-slate-700');
+            });
+            
+            const activeLink = document.querySelector(`[onclick="showPage('${pageName}')"]`);
+            if (activeLink) {
+                activeLink.classList.add('active', 'bg-blue-50', 'text-blue-700');
+                activeLink.classList.remove('text-slate-700');
+            }
+
+            // Update page title
+            const titles = {
+                'overview': { title: 'Overview', subtitle: 'Monitor your AI chatbot performance' },
+                'documents': { title: 'Documents', subtitle: 'Manage your knowledge base' },
+                'messages': { title: 'Messages', subtitle: 'View conversation history' },
+                'analytics': { title: 'Analytics', subtitle: 'Performance metrics and insights' },
+                'settings': { title: 'Settings', subtitle: 'Configure your chatbot' }
+            };
+            
+            const pageInfo = titles[pageName];
+            if (pageInfo) {
+                document.getElementById('page-title').textContent = pageInfo.title;
+                document.getElementById('page-subtitle').textContent = pageInfo.subtitle;
+            }
+        }
+
+        // Chat functionality
+        function showChat(sessionId) {
+            document.getElementById('chat-empty-state').classList.add('hidden');
+            document.getElementById('chat-interface').classList.remove('hidden');
+            document.getElementById('chat-session-id').textContent = sessionId;
+            // TODO: Load actual message history from API
+        }
+
+        function hideChat() {
+            document.getElementById('chat-interface').classList.add('hidden');
+            document.getElementById('chat-empty-state').classList.remove('hidden');
+        }
+
+        // Modal functions
+        function openUploadModal() {
+            document.getElementById('upload-modal').classList.remove('hidden');
+        }
+
+        function closeUploadModal() {
+            document.getElementById('upload-modal').classList.add('hidden');
+        }
+
+        // Chart initialization
+        (function() {
+            // Messages Volume Chart
+            const messagesCtx = document.getElementById('messagesChart');
+            if (messagesCtx) {
+                new Chart(messagesCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                        datasets: [{
+                            label: 'Messages',
+                            data: [1200, 1350, 1100, 1400, 1650, 1200, 980],
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Daily Chart for Analytics
+            const dailyCtx = document.getElementById('dailyChart');
+            if (dailyCtx) {
+                new Chart(dailyCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+                        datasets: [{
+                            label: 'Daily Messages',
+                            data: [850, 920, 780, 1100, 1250, 1400, 1200],
+                            backgroundColor: '#3b82f6',
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Response Time Chart
+            const responseCtx = document.getElementById('responseTimeChart');
+            if (responseCtx) {
+                new Chart(responseCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['< 1s', '1-2s', '2-3s', '> 3s'],
+                        datasets: [{
+                            data: [45, 35, 15, 5],
+                            backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+        })();
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            lucide.createIcons();
+            
+            // Auto-show login page on load
+            showLogin();
+        });
+    </script>
+</body>
+</html>
