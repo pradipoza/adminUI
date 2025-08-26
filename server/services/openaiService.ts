@@ -42,17 +42,19 @@ export class OpenAIService {
     }
   }
 
-  async searchSimilarChunks(query: string, chunks: { chunkText: string; embedding: string }[]): Promise<string[]> {
+  async searchSimilarChunks(query: string, chunks: { chunkText: string; embedding: string | null }[]): Promise<string[]> {
     try {
       // Generate embedding for the query
       const queryEmbedding = await this.createEmbedding(query);
       
       // Calculate similarity scores (simplified cosine similarity)
-      const similarities = chunks.map(chunk => {
-        const embedding = JSON.parse(chunk.embedding);
-        const similarity = this.cosineSimilarity(queryEmbedding, embedding);
-        return { text: chunk.chunkText, similarity };
-      });
+      const similarities = chunks
+        .filter(chunk => chunk.embedding !== null)
+        .map(chunk => {
+          const embedding = JSON.parse(chunk.embedding!) as number[];
+          const similarity = this.cosineSimilarity(queryEmbedding, embedding);
+          return { text: chunk.chunkText, similarity };
+        });
 
       // Sort by similarity and return top 3 chunks
       return similarities

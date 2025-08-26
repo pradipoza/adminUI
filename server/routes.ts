@@ -175,7 +175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get all chunks and use similarity search to find relevant context
       const allChunks = await storage.getAllChunks();
-      const validChunks = allChunks.filter(chunk => chunk.embedding !== null) as { chunkText: string; embedding: string }[];
+      const validChunks = allChunks.filter(chunk => chunk.embedding !== null);
       const relevantChunks = await openaiService.searchSimilarChunks(message, validChunks);
       const context = relevantChunks.join('\n\n');
 
