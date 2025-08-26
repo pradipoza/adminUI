@@ -42,25 +42,14 @@ export class OpenAIService {
     }
   }
 
-  async searchSimilarChunks(query: string, chunks: { chunkText: string; embedding: string | null }[]): Promise<string[]> {
+  async searchSimilarChunks(query: string, storage: any): Promise<string[]> {
     try {
       // Generate embedding for the query
       const queryEmbedding = await this.createEmbedding(query);
       
-      // Calculate similarity scores (simplified cosine similarity)
-      const similarities = chunks
-        .filter(chunk => chunk.embedding !== null)
-        .map(chunk => {
-          const embedding = JSON.parse(chunk.embedding!) as number[];
-          const similarity = this.cosineSimilarity(queryEmbedding, embedding);
-          return { text: chunk.chunkText, similarity };
-        });
-
-      // Sort by similarity and return top 3 chunks
-      return similarities
-        .sort((a, b) => b.similarity - a.similarity)
-        .slice(0, 3)
-        .map(item => item.text);
+      // Use pgvector for efficient similarity search
+      const results = await storage.searchSimilarChunks(queryEmbedding, 3);
+      return results.map((result: any) => result.chunkText);
     } catch (error) {
       console.error('Failed to search similar chunks:', error);
       return [];

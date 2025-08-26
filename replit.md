@@ -8,6 +8,17 @@ This is a full-stack web application that provides an admin dashboard for managi
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes (August 26, 2025)
+
+✓ Successfully migrated project from Replit Agent to Replit environment
+✓ Fixed session secret configuration for authentication
+✓ Created PostgreSQL database with all required tables
+✓ Enabled pgvector extension for vector embeddings
+✓ Updated schema to use proper vector(1536) type for embeddings storage
+✓ Implemented efficient vector similarity search using pgvector operators
+✓ Fixed document chunking and embedding generation with OpenAI API
+✓ Added cascade deletion for chunks when documents are removed
+
 ## System Architecture
 
 ### Frontend Architecture

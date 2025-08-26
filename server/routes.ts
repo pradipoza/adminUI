@@ -173,10 +173,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Message and sessionId are required" });
       }
 
-      // Get all chunks and use similarity search to find relevant context
-      const allChunks = await storage.getAllChunks();
-      const validChunks = allChunks.filter(chunk => chunk.embedding !== null);
-      const relevantChunks = await openaiService.searchSimilarChunks(message, validChunks);
+      // Use pgvector for efficient similarity search to find relevant context
+      const relevantChunks = await openaiService.searchSimilarChunks(message, storage);
       const context = relevantChunks.join('\n\n');
 
       const systemPrompt = `You are a helpful customer service assistant. Use the following context to answer questions when relevant:\n\n${context}`;

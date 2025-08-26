@@ -8,7 +8,21 @@ import {
   text,
   integer,
   serial,
+  customType,
 } from "drizzle-orm/pg-core";
+
+// Define custom vector type for pgvector
+const vector = customType<{ data: number[]; driverData: string }>({
+  dataType() {
+    return 'vector(1536)';
+  },
+  toDriver(value: number[]): string {
+    return `[${value.join(',')}]`;
+  },
+  fromDriver(value: string): number[] {
+    return JSON.parse(value);
+  },
+});
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -50,7 +64,7 @@ export const chunks = pgTable("chunks", {
   id: serial("id").primaryKey(),
   documentId: integer("document_id").references(() => documents.id, { onDelete: 'cascade' }).notNull(),
   chunkText: text("chunk_text").notNull(),
-  embedding: text("embedding"), // Store as JSON array string for compatibility
+  embedding: vector("embedding"), // pgvector column for embeddings
   createdAt: timestamp("created_at").defaultNow(),
 });
 

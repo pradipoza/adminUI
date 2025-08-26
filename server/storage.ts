@@ -32,6 +32,7 @@ export interface IStorage {
   getAllChunks(): Promise<Chunk[]>;
   createChunk(chunk: InsertChunk): Promise<Chunk>;
   deleteChunksByDocumentId(documentId: number): Promise<void>;
+  searchSimilarChunks(queryEmbedding: number[], limit?: number): Promise<{ chunkText: string; similarity: number }[]>;
   
   // Message operations
   getMessages(sessionId?: string): Promise<Message[]>;
@@ -103,6 +104,22 @@ export class DatabaseStorage implements IStorage {
 
   async deleteChunksByDocumentId(documentId: number): Promise<void> {
     await db.delete(chunks).where(eq(chunks.documentId, documentId));
+  }
+
+  async searchSimilarChunks(queryEmbedding: number[], limit: number = 3): Promise<{ chunkText: string; similarity: number }[]> {
+    // Use pgvector's cosine distance operator for efficient similarity search
+    const results = await db.execute(
+      sql`SELECT chunk_text, 1 - (embedding <=> ${JSON.stringify(queryEmbedding)}::vector) as similarity 
+          FROM chunks 
+          WHERE embedding IS NOT NULL 
+          ORDER BY embedding <=> ${JSON.stringify(queryEmbedding)}::vector 
+          LIMIT ${limit}`
+    );
+    
+    return results.rows.map((row: any) => ({
+      chunkText: row.chunk_text,
+      similarity: parseFloat(row.similarity)
+    }));
   }
 
   // Message operations
