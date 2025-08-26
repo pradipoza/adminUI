@@ -78,26 +78,26 @@ export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
         ) : Array.isArray(messages) && messages.length > 0 ? (
           <div className="space-y-2">
             {messages.map((msg: Message) => {
-              const isUser = msg.message.type === 'user';
-              const isAI = msg.message.type === 'assistant';
+              const isHuman = msg.message.type === 'human';
+              const isAI = msg.message.type === 'ai';
               
               return (
                 <div key={msg.id} className={`flex ${isAI ? 'justify-end' : 'justify-start'} mb-3`}>
                   <div className={`max-w-xs lg:max-w-md px-3 py-2 rounded-lg shadow-md relative ${
-                    isUser 
-                      ? 'bg-white text-gray-800 rounded-tl-lg rounded-tr-lg rounded-br-lg rounded-bl-sm border border-gray-200' // Student messages on left - white bubble with tail effect
+                    isHuman 
+                      ? 'bg-white text-gray-800 rounded-tl-lg rounded-tr-lg rounded-br-lg rounded-bl-sm border border-gray-200' // Human messages on left - white bubble with tail effect
                       : 'bg-green-500 text-white rounded-tl-lg rounded-tr-lg rounded-bl-lg rounded-br-sm' // AI messages on right - green bubble with tail effect
                   }`}>
                     {/* Message sender label */}
                     <p className={`text-xs font-medium mb-1 ${
-                      isUser ? 'text-blue-600' : 'text-green-100'
+                      isHuman ? 'text-blue-600' : 'text-green-100'
                     }`}>
-                      {isUser ? 'Student' : 'AI Assistant'}
+                      {isHuman ? 'Student' : 'AI Assistant'}
                     </p>
                     <p className="text-sm leading-relaxed">{msg.message.content}</p>
                     <div className={`flex justify-end mt-1`}>
                       <p className={`text-xs ${
-                        isUser ? 'text-gray-500' : 'text-green-100'
+                        isHuman ? 'text-gray-500' : 'text-green-100'
                       }`}>
                         {msg.message.timestamp ? formatTime(msg.message.timestamp) : 'Just now'}
                       </p>
