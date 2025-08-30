@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   MessageCircle, 
   LayoutDashboard, 
@@ -21,9 +22,10 @@ const navigation = [
 
 export default function Sidebar() {
   const [location] = useLocation();
+  const { logout } = useAuth();
 
   const handleLogout = () => {
-    window.location.href = "/api/logout";
+    logout();
   };
 
   return (
