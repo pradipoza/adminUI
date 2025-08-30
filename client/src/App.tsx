@@ -37,7 +37,6 @@ function Router() {
           <Route path="/messages" component={Messages} />
           <Route path="/analytics" component={Analytics} />
           <Route path="/settings" component={Settings} />
-          <Route component={NotFound} />
         </>
       )}
     </Switch>
