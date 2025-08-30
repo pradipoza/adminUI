@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import NotFound from "@/pages/not-found";
-import Landing from "@/pages/landing";
+import AuthPage from "@/pages/auth";
 import Dashboard from "@/pages/dashboard";
 import Documents from "@/pages/documents";
 import Messages from "@/pages/messages";
@@ -15,10 +15,21 @@ import Settings from "@/pages/settings";
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
     <Switch>
-      {isLoading || !isAuthenticated ? (
-        <Route path="/" component={Landing} />
+      {!isAuthenticated ? (
+        <>
+          <Route path="/auth" component={AuthPage} />
+          <Route component={AuthPage} />
+        </>
       ) : (
         <>
           <Route path="/" component={Dashboard} />
@@ -26,9 +37,9 @@ function Router() {
           <Route path="/messages" component={Messages} />
           <Route path="/analytics" component={Analytics} />
           <Route path="/settings" component={Settings} />
+          <Route component={NotFound} />
         </>
       )}
-      <Route component={NotFound} />
     </Switch>
   );
 }

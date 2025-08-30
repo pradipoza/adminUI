@@ -38,11 +38,11 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// User storage table.
-// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+// User storage table for email/password authentication
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: varchar("email").unique(),
+  email: varchar("email").unique().notNull(),
+  password: varchar("password").notNull(), // Hashed password
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
@@ -99,4 +99,31 @@ export const insertDocumentSchema = createInsertSchema(documents).pick({
 export const insertMessageSchema = createInsertSchema(messages).pick({
   sessionId: true,
   message: true,
+});
+
+export const insertUserSchema = createInsertSchema(users).pick({
+  email: true,
+  password: true,
+  firstName: true,
+  lastName: true,
+});
+
+export const loginSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  password: z.string().min(1, "Password is required"),
+});
+
+export const registerSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  firstName: z.string().min(1, "First name is required").optional(),
+  lastName: z.string().min(1, "Last name is required").optional(),
+});
+
+export const updateProfileSchema = z.object({
+  email: z.string().email("Invalid email format").optional(),
+  password: z.string().min(8, "Password must be at least 8 characters").optional(),
+  currentPassword: z.string().min(1, "Current password is required").optional(),
+  firstName: z.string().min(1, "First name is required").optional(),
+  lastName: z.string().min(1, "Last name is required").optional(),
 });

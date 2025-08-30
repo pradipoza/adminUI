@@ -1,11 +1,12 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, getUserByEmail, createUser, updateUserPassword, updateUserProfile, comparePasswords } from "./auth";
+import passport from "passport";
 import { documentService } from "./services/documentService";
 import { openaiService } from "./services/openaiService";
 import multer from "multer";
-import { insertDocumentSchema, insertMessageSchema } from "@shared/schema";
+import { insertDocumentSchema, insertMessageSchema, loginSchema, registerSchema, updateProfileSchema } from "@shared/schema";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -28,19 +29,144 @@ const upload = multer({
   },
 });
 
+// Authentication middleware
+function isAuthenticated(req: any, res: any, next: any) {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.status(401).json({ message: "Unauthorized" });
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
-  await setupAuth(app);
+  // Setup authentication
+  setupAuth(app);
 
   // Auth routes
+  app.post('/api/auth/login', (req, res, next) => {
+    const result = loginSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({ message: "Invalid email or password format" });
+    }
+
+    passport.authenticate('local', (err: any, user: any, info: any) => {
+      if (err) {
+        return res.status(500).json({ message: "Authentication error" });
+      }
+      if (!user) {
+        return res.status(401).json({ message: info?.message || "Invalid email or password" });
+      }
+      
+      req.logIn(user, (err: any) => {
+        if (err) {
+          console.error("Login error:", err);
+          return res.status(500).json({ message: "Login error", error: err.message });
+        }
+        const { password, ...userWithoutPassword } = user;
+        res.json(userWithoutPassword);
+      });
+    })(req, res, next);
+  });
+
+  app.post('/api/auth/register', async (req, res) => {
+    try {
+      const result = registerSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid input", 
+          errors: result.error.issues 
+        });
+      }
+
+      const { email, password, firstName, lastName } = result.data;
+      
+      // Check if user already exists
+      const existingUser = await getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User already exists with this email" });
+      }
+
+      // Create new user
+      const user = await createUser({ email, password, firstName, lastName });
+      
+      // Log the user in
+      req.logIn(user, (err: any) => {
+        if (err) {
+          return res.status(500).json({ message: "Registration successful but login failed" });
+        }
+        const { password: _, ...userWithoutPassword } = user;
+        res.status(201).json(userWithoutPassword);
+      });
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(500).json({ message: "Failed to register user" });
+    }
+  });
+
+  app.post('/api/auth/logout', (req, res) => {
+    req.logout((err: any) => {
+      if (err) {
+        return res.status(500).json({ message: "Logout failed" });
+      }
+      res.json({ message: "Logged out successfully" });
+    });
+  });
+
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
+      const { password, ...userWithoutPassword } = req.user;
+      res.json(userWithoutPassword);
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  app.put('/api/auth/profile', isAuthenticated, async (req: any, res) => {
+    try {
+      const result = updateProfileSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid input", 
+          errors: result.error.issues 
+        });
+      }
+
+      const { email, password, currentPassword, firstName, lastName } = result.data;
+      const userId = req.user.id;
+
+      // If updating password, verify current password
+      if (password && currentPassword) {
+        const user = await storage.getUser(userId);
+        if (!user || !(await comparePasswords(currentPassword, user.password))) {
+          return res.status(401).json({ message: "Current password is incorrect" });
+        }
+        await updateUserPassword(userId, password);
+      }
+
+      // Update profile fields
+      const updates: any = {};
+      if (email && email !== req.user.email) {
+        // Check if email is already taken
+        const existingUser = await getUserByEmail(email);
+        if (existingUser && existingUser.id !== userId) {
+          return res.status(400).json({ message: "Email already in use" });
+        }
+        updates.email = email;
+      }
+      if (firstName !== undefined) updates.firstName = firstName;
+      if (lastName !== undefined) updates.lastName = lastName;
+
+      if (Object.keys(updates).length > 0) {
+        await updateUserProfile(userId, updates);
+      }
+
+      // Return updated user
+      const updatedUser = await storage.getUser(userId);
+      const { password: _, ...userWithoutPassword } = updatedUser!;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      res.status(500).json({ message: "Failed to update profile" });
     }
   });
 
