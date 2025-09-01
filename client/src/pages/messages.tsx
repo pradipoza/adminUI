@@ -69,7 +69,7 @@ export default function Messages() {
         <div className="w-80 bg-gray-50 border-r border-gray-200 flex flex-col">
           
           {/* Header with Account Tabs */}
-          <div className="bg-[#25D366] border-b border-green-600 p-4">
+          <div className="bg-[#075E54] border-b border-[#064e45] p-4">
             <div className="mb-4">
               <h2 className="text-lg font-semibold text-white">Messages</h2>
             </div>
@@ -81,7 +81,7 @@ export default function Messages() {
                 size="sm"
                 onClick={() => setActiveAccount('account1')}
                 data-testid="button-whatsapp-account1"
-                className={`flex-1 text-xs ${activeAccount === 'account1' ? 'bg-white text-green-700 hover:bg-white' : 'text-white hover:bg-green-600'}`}
+                className={`flex-1 text-xs ${activeAccount === 'account1' ? 'bg-white text-[#075E54] hover:bg-white' : 'text-white hover:bg-[#064e45]'}`}
               >
                 Account 1
               </Button>
@@ -90,7 +90,7 @@ export default function Messages() {
                 size="sm"
                 onClick={() => setActiveAccount('account2')}
                 data-testid="button-whatsapp-account2"
-                className={`flex-1 text-xs ${activeAccount === 'account2' ? 'bg-white text-green-700 hover:bg-white' : 'text-white hover:bg-green-600'}`}
+                className={`flex-1 text-xs ${activeAccount === 'account2' ? 'bg-white text-[#075E54] hover:bg-white' : 'text-white hover:bg-[#064e45]'}`}
               >
                 Account 2
               </Button>
@@ -107,14 +107,14 @@ export default function Messages() {
                   <div
                     key={contact.sessionId}
                     className={`cursor-pointer p-4 border-b border-gray-200 hover:bg-gray-100 transition-colors ${
-                      selectedContact === contact.sessionId ? 'bg-green-50 border-r-4 border-r-green-500' : ''
+                      selectedContact === contact.sessionId ? 'bg-[#f0fdf4] border-r-4 border-r-[#075E54]' : ''
                     }`}
                     onClick={() => setSelectedContact(contact.sessionId)}
                     data-testid={`contact-${contact.sessionId}`}
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-green-200 rounded-full flex items-center justify-center flex-shrink-0">
-                        <User className="w-6 h-6 text-green-700" />
+                      <div className="w-12 h-12 bg-[#e6f7f1] rounded-full flex items-center justify-center flex-shrink-0">
+                        <User className="w-6 h-6 text-[#075E54]" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
@@ -148,16 +148,16 @@ export default function Messages() {
           {selectedContact ? (
             <>
               {/* Chat Header */}
-              <div className="bg-green-100 border-b border-green-200 p-4">
+              <div className="bg-[#e6f7f1] border-b border-[#075E54] p-4">
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-green-200 rounded-full flex items-center justify-center">
-                    <User className="w-5 h-5 text-green-700" />
+                  <div className="w-10 h-10 bg-[#075E54] rounded-full flex items-center justify-center">
+                    <User className="w-5 h-5 text-white" />
                   </div>
                   <div>
                     <h3 className="font-medium text-gray-900" data-testid={`chat-header-${selectedContact}`}>
                       {selectedContact}
                     </h3>
-                    <p className="text-sm text-green-600">WhatsApp Contact</p>
+                    <p className="text-sm text-[#075E54]">WhatsApp Contact</p>
                   </div>
                 </div>
               </div>
@@ -168,13 +168,13 @@ export default function Messages() {
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center bg-green-50">
+            <div className="flex-1 flex items-center justify-center bg-[#f0fdf4]">
               <div className="text-center">
-                <div className="w-20 h-20 bg-green-200 rounded-full mx-auto mb-4 flex items-center justify-center">
-                  <MessageSquare className="w-10 h-10 text-green-600" />
+                <div className="w-20 h-20 bg-[#e6f7f1] rounded-full mx-auto mb-4 flex items-center justify-center">
+                  <MessageSquare className="w-10 h-10 text-[#075E54]" />
                 </div>
                 <h3 className="text-xl font-medium text-gray-900 mb-2">Select a Contact</h3>
-                <p className="text-green-600">Choose a contact from the left to start viewing the conversation</p>
+                <p className="text-[#075E54]">Choose a contact from the left to start viewing the conversation</p>
               </div>
             </div>
           )}
