@@ -1,12 +1,12 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, getUserByEmail, createUser, updateUserPassword, updateUserProfile, comparePasswords } from "./auth";
+import { setupAuth, getUserByEmail, updateUserPassword, updateUserProfile, comparePasswords } from "./auth";
 import passport from "passport";
 import { documentService } from "./services/documentService";
 import { openaiService } from "./services/openaiService";
 import multer from "multer";
-import { insertDocumentSchema, insertMessageSchema, insertMessage1Schema, insertStudentSchema, loginSchema, registerSchema, updateProfileSchema } from "@shared/schema";
+import { insertDocumentSchema, insertMessageSchema, insertMessage1Schema, insertStudentSchema, loginSchema, updateProfileSchema } from "@shared/schema";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -67,40 +67,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     })(req, res, next);
   });
 
-  app.post('/api/auth/register', async (req, res) => {
-    try {
-      const result = registerSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ 
-          message: "Invalid input", 
-          errors: result.error.issues 
-        });
-      }
-
-      const { email, password, firstName, lastName } = result.data;
-      
-      // Check if user already exists
-      const existingUser = await getUserByEmail(email);
-      if (existingUser) {
-        return res.status(400).json({ message: "User already exists with this email" });
-      }
-
-      // Create new user
-      const user = await createUser({ email, password, firstName, lastName });
-      
-      // Log the user in
-      req.logIn(user, (err: any) => {
-        if (err) {
-          return res.status(500).json({ message: "Registration successful but login failed" });
-        }
-        const { password: _, ...userWithoutPassword } = user;
-        res.status(201).json(userWithoutPassword);
-      });
-    } catch (error) {
-      console.error("Registration error:", error);
-      res.status(500).json({ message: "Failed to register user" });
-    }
-  });
 
   app.post('/api/auth/logout', (req, res) => {
     req.logout((err: any) => {

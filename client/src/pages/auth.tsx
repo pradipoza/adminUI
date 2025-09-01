@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
@@ -19,21 +18,12 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
-const registerSchema = z.object({
-  email: z.string().email("Invalid email format"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  firstName: z.string().min(1, "First name is required").optional(),
-  lastName: z.string().min(1, "Last name is required").optional(),
-});
-
 type LoginFormData = z.infer<typeof loginSchema>;
-type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function AuthPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { user, isLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState("login");
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -47,16 +37,6 @@ export default function AuthPage() {
     defaultValues: {
       email: "",
       password: "",
-    },
-  });
-
-  const registerForm = useForm<RegisterFormData>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-      firstName: "",
-      lastName: "",
     },
   });
 
@@ -82,34 +62,8 @@ export default function AuthPage() {
     },
   });
 
-  const registerMutation = useMutation({
-    mutationFn: async (data: RegisterFormData) => {
-      const res = await apiRequest("POST", "/api/auth/register", data);
-      return res.json();
-    },
-    onSuccess: (user) => {
-      queryClient.setQueryData(["/api/auth/user"], user);
-      toast({
-        title: "Account created!",
-        description: "Your account has been created successfully.",
-      });
-      setLocation("/");
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Registration failed",
-        description: error.message || "Failed to create account",
-        variant: "destructive",
-      });
-    },
-  });
-
   const onLogin = (data: LoginFormData) => {
     loginMutation.mutate(data);
-  };
-
-  const onRegister = (data: RegisterFormData) => {
-    registerMutation.mutate(data);
   };
 
   if (isLoading) {
@@ -142,134 +96,48 @@ export default function AuthPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="login">Login</TabsTrigger>
-                  <TabsTrigger value="register">Register</TabsTrigger>
-                </TabsList>
+              <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="login-email">Email</Label>
+                  <Input
+                    id="login-email"
+                    type="email"
+                    placeholder="admin@example.com"
+                    data-testid="input-login-email"
+                    {...loginForm.register("email")}
+                  />
+                  {loginForm.formState.errors.email && (
+                    <p className="text-sm text-red-600">
+                      {loginForm.formState.errors.email.message}
+                    </p>
+                  )}
+                </div>
                 
-                <TabsContent value="login" className="space-y-4 mt-6">
-                  <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="login-email">Email</Label>
-                      <Input
-                        id="login-email"
-                        type="email"
-                        placeholder="admin@example.com"
-                        data-testid="input-login-email"
-                        {...loginForm.register("email")}
-                      />
-                      {loginForm.formState.errors.email && (
-                        <p className="text-sm text-red-600">
-                          {loginForm.formState.errors.email.message}
-                        </p>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="login-password">Password</Label>
-                      <Input
-                        id="login-password"
-                        type="password"
-                        placeholder="Enter your password"
-                        data-testid="input-login-password"
-                        {...loginForm.register("password")}
-                      />
-                      {loginForm.formState.errors.password && (
-                        <p className="text-sm text-red-600">
-                          {loginForm.formState.errors.password.message}
-                        </p>
-                      )}
-                    </div>
-                    
-                    <Button
-                      type="submit"
-                      className="w-full"
-                      disabled={loginMutation.isPending}
-                      data-testid="button-login"
-                    >
-                      {loginMutation.isPending ? "Signing in..." : "Sign In"}
-                    </Button>
-                  </form>
-                </TabsContent>
+                <div className="space-y-2">
+                  <Label htmlFor="login-password">Password</Label>
+                  <Input
+                    id="login-password"
+                    type="password"
+                    placeholder="Enter your password"
+                    data-testid="input-login-password"
+                    {...loginForm.register("password")}
+                  />
+                  {loginForm.formState.errors.password && (
+                    <p className="text-sm text-red-600">
+                      {loginForm.formState.errors.password.message}
+                    </p>
+                  )}
+                </div>
                 
-                <TabsContent value="register" className="space-y-4 mt-6">
-                  <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="register-firstName">First Name</Label>
-                        <Input
-                          id="register-firstName"
-                          placeholder="John"
-                          data-testid="input-register-firstName"
-                          {...registerForm.register("firstName")}
-                        />
-                        {registerForm.formState.errors.firstName && (
-                          <p className="text-sm text-red-600">
-                            {registerForm.formState.errors.firstName.message}
-                          </p>
-                        )}
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="register-lastName">Last Name</Label>
-                        <Input
-                          id="register-lastName"
-                          placeholder="Doe"
-                          data-testid="input-register-lastName"
-                          {...registerForm.register("lastName")}
-                        />
-                        {registerForm.formState.errors.lastName && (
-                          <p className="text-sm text-red-600">
-                            {registerForm.formState.errors.lastName.message}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="register-email">Email</Label>
-                      <Input
-                        id="register-email"
-                        type="email"
-                        placeholder="admin@example.com"
-                        data-testid="input-register-email"
-                        {...registerForm.register("email")}
-                      />
-                      {registerForm.formState.errors.email && (
-                        <p className="text-sm text-red-600">
-                          {registerForm.formState.errors.email.message}
-                        </p>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="register-password">Password</Label>
-                      <Input
-                        id="register-password"
-                        type="password"
-                        placeholder="At least 8 characters"
-                        data-testid="input-register-password"
-                        {...registerForm.register("password")}
-                      />
-                      {registerForm.formState.errors.password && (
-                        <p className="text-sm text-red-600">
-                          {registerForm.formState.errors.password.message}
-                        </p>
-                      )}
-                    </div>
-                    
-                    <Button
-                      type="submit"
-                      className="w-full"
-                      disabled={registerMutation.isPending}
-                      data-testid="button-register"
-                    >
-                      {registerMutation.isPending ? "Creating account..." : "Create Account"}
-                    </Button>
-                  </form>
-                </TabsContent>
-              </Tabs>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={loginMutation.isPending}
+                  data-testid="button-login"
+                >
+                  {loginMutation.isPending ? "Signing in..." : "Sign In"}
+                </Button>
+              </form>
             </CardContent>
           </Card>
         </div>
@@ -285,7 +153,7 @@ export default function AuthPage() {
                 WhatsApp AI Dashboard
               </h1>
               <p className="text-lg text-gray-600">
-                Manage your AI chatbot conversations, upload knowledge base documents, and track analytics.
+                Secure admin access to manage your AI chatbot conversations, upload knowledge base documents, and track analytics.
               </p>
             </div>
             
