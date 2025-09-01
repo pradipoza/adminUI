@@ -9,6 +9,7 @@ import AuthPage from "@/pages/auth";
 import Dashboard from "@/pages/dashboard";
 import Documents from "@/pages/documents";
 import Messages from "@/pages/messages";
+import Students from "@/pages/students";
 import Analytics from "@/pages/analytics";
 import Settings from "@/pages/settings";
 
@@ -35,6 +36,7 @@ function Router() {
           <Route path="/" component={Dashboard} />
           <Route path="/documents" component={Documents} />
           <Route path="/messages" component={Messages} />
+          <Route path="/students" component={Students} />
           <Route path="/analytics" component={Analytics} />
           <Route path="/settings" component={Settings} />
         </>

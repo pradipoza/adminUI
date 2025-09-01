@@ -4,6 +4,7 @@ import {
   chunks,
   messages,
   messages1,
+  students,
   type User,
   type UpsertUser,
   type Document,
@@ -14,6 +15,8 @@ import {
   type InsertMessage,
   type Message1,
   type InsertMessage1,
+  type Student,
+  type InsertStudent,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, sql, and } from "drizzle-orm";
@@ -60,6 +63,13 @@ export interface IStorage {
     weeklyMessages: number;
     monthlyMessages: number;
   }>;
+  
+  // Student operations
+  getStudents(): Promise<Student[]>;
+  getStudent(whatsappId: string): Promise<Student | undefined>;
+  createStudent(student: InsertStudent): Promise<Student>;
+  updateStudent(whatsappId: string, updates: Partial<InsertStudent>): Promise<Student>;
+  deleteStudent(whatsappId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -283,6 +293,34 @@ export class DatabaseStorage implements IStorage {
       weeklyMessages: weeklyResult.count,
       monthlyMessages: monthlyResult.count,
     };
+  }
+
+  // Student operations
+  async getStudents(): Promise<Student[]> {
+    return await db.select().from(students).orderBy(asc(students.name));
+  }
+
+  async getStudent(whatsappId: string): Promise<Student | undefined> {
+    const [student] = await db.select().from(students).where(eq(students.whatsappId, whatsappId));
+    return student;
+  }
+
+  async createStudent(student: InsertStudent): Promise<Student> {
+    const [newStudent] = await db.insert(students).values(student).returning();
+    return newStudent;
+  }
+
+  async updateStudent(whatsappId: string, updates: Partial<InsertStudent>): Promise<Student> {
+    const [updatedStudent] = await db
+      .update(students)
+      .set(updates)
+      .where(eq(students.whatsappId, whatsappId))
+      .returning();
+    return updatedStudent;
+  }
+
+  async deleteStudent(whatsappId: string): Promise<void> {
+    await db.delete(students).where(eq(students.whatsappId, whatsappId));
   }
 }
 

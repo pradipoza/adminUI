@@ -7,6 +7,7 @@ import {
   LayoutDashboard, 
   FileText, 
   MessageSquare, 
+  Users, 
   BarChart3, 
   Settings, 
   LogOut 
@@ -16,6 +17,7 @@ const navigation = [
   { name: "Overview", href: "/", icon: LayoutDashboard },
   { name: "Documents", href: "/documents", icon: FileText },
   { name: "Messages", href: "/messages", icon: MessageSquare },
+  { name: "Students", href: "/students", icon: Users },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Settings", href: "/settings", icon: Settings },
 ];

@@ -6,7 +6,7 @@ import passport from "passport";
 import { documentService } from "./services/documentService";
 import { openaiService } from "./services/openaiService";
 import multer from "multer";
-import { insertDocumentSchema, insertMessageSchema, insertMessage1Schema, loginSchema, registerSchema, updateProfileSchema } from "@shared/schema";
+import { insertDocumentSchema, insertMessageSchema, insertMessage1Schema, insertStudentSchema, loginSchema, registerSchema, updateProfileSchema } from "@shared/schema";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -320,6 +320,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching analytics:", error);
       res.status(500).json({ message: "Failed to fetch analytics" });
+    }
+  });
+
+  // Student routes
+  app.get("/api/students", isAuthenticated, async (req, res) => {
+    try {
+      const students = await storage.getStudents();
+      res.json(students);
+    } catch (error) {
+      console.error("Error fetching students:", error);
+      res.status(500).json({ message: "Failed to fetch students" });
+    }
+  });
+
+  app.get("/api/students/:whatsappId", isAuthenticated, async (req, res) => {
+    try {
+      const whatsappId = req.params.whatsappId;
+      const student = await storage.getStudent(whatsappId);
+      
+      if (!student) {
+        return res.status(404).json({ message: "Student not found" });
+      }
+      
+      res.json(student);
+    } catch (error) {
+      console.error("Error fetching student:", error);
+      res.status(500).json({ message: "Failed to fetch student" });
+    }
+  });
+
+  app.post("/api/students", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertStudentSchema.parse(req.body);
+      const student = await storage.createStudent(validatedData);
+      res.status(201).json(student);
+    } catch (error) {
+      console.error("Error creating student:", error);
+      res.status(500).json({ message: "Failed to create student" });
+    }
+  });
+
+  app.put("/api/students/:whatsappId", isAuthenticated, async (req, res) => {
+    try {
+      const whatsappId = req.params.whatsappId;
+      const updates = req.body;
+      const student = await storage.updateStudent(whatsappId, updates);
+      res.json(student);
+    } catch (error) {
+      console.error("Error updating student:", error);
+      res.status(500).json({ message: "Failed to update student" });
+    }
+  });
+
+  app.delete("/api/students/:whatsappId", isAuthenticated, async (req, res) => {
+    try {
+      const whatsappId = req.params.whatsappId;
+      await storage.deleteStudent(whatsappId);
+      res.json({ message: "Student deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting student:", error);
+      res.status(500).json({ message: "Failed to delete student" });
     }
   });
 

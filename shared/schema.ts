@@ -84,6 +84,12 @@ export const messages1 = pgTable("messages1", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Students table for storing student information
+export const students = pgTable("students", {
+  whatsappId: text("whatsapp_id").primaryKey(),
+  name: text("name"),
+});
+
 // Type exports
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -100,6 +106,9 @@ export type Message = typeof messages.$inferSelect;
 export type InsertMessage1 = typeof messages1.$inferInsert;
 export type Message1 = typeof messages1.$inferSelect;
 
+export type InsertStudent = typeof students.$inferInsert;
+export type Student = typeof students.$inferSelect;
+
 // Zod schemas
 export const insertDocumentSchema = createInsertSchema(documents).pick({
   title: true,
@@ -115,6 +124,11 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
 export const insertMessage1Schema = createInsertSchema(messages1).pick({
   sessionId: true,
   message: true,
+});
+
+export const insertStudentSchema = createInsertSchema(students).pick({
+  whatsappId: true,
+  name: true,
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
