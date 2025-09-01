@@ -13,6 +13,7 @@ interface Message {
     content: string;
     timestamp: string;
   };
+  createdAt: string;
 }
 
 export default function ChatInterface({ sessionId, account = 'account1' }: ChatInterfaceProps) {
@@ -34,11 +35,33 @@ export default function ChatInterface({ sessionId, account = 'account1' }: ChatI
   });
 
   const formatTime = (timestamp: string) => {
-    return new Date(timestamp).toLocaleTimeString('en-US', {
+    const messageDate = new Date(timestamp);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    // Reset time to compare dates only
+    const messageDateOnly = new Date(messageDate.getFullYear(), messageDate.getMonth(), messageDate.getDate());
+    const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const yesterdayOnly = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+    
+    const timeString = messageDate.toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
     });
+    
+    if (messageDateOnly.getTime() === todayOnly.getTime()) {
+      return timeString; // Today: just time
+    } else if (messageDateOnly.getTime() === yesterdayOnly.getTime()) {
+      return `yesterday ${timeString}`; // Yesterday: "yesterday time"
+    } else {
+      const monthDay = messageDate.toLocaleDateString('en-US', {
+        month: 'numeric',
+        day: 'numeric',
+      });
+      return `${monthDay} ${timeString}`; // Before yesterday: "M/D time"
+    }
   };
 
   return (
@@ -59,7 +82,7 @@ export default function ChatInterface({ sessionId, account = 'account1' }: ChatI
                   <div className={`max-w-xs lg:max-w-md px-3 py-2 rounded-lg shadow-md relative ${
                     isHuman 
                       ? 'bg-white text-gray-800 rounded-tl-lg rounded-tr-lg rounded-br-lg rounded-bl-sm border border-gray-200' // Human messages on left - white bubble with tail effect
-                      : 'bg-green-500 text-white rounded-tl-lg rounded-tr-lg rounded-bl-lg rounded-br-sm' // AI messages on right - green bubble with tail effect
+                      : 'bg-[#075E54] text-white rounded-tl-lg rounded-tr-lg rounded-bl-lg rounded-br-sm' // AI messages on right - WhatsApp green bubble with tail effect
                   }`}>
                     {/* Message sender label */}
                     <p className={`text-xs font-medium mb-1 ${
@@ -68,13 +91,14 @@ export default function ChatInterface({ sessionId, account = 'account1' }: ChatI
                       {isHuman ? 'Student' : 'AI Assistant'}
                     </p>
                     <p className="text-sm leading-relaxed">{msg.message.content}</p>
-                    <div className={`flex justify-end mt-1`}>
-                      <p className={`text-xs ${
-                        isHuman ? 'text-gray-500' : 'text-green-100'
-                      }`}>
-                        {msg.message.timestamp ? formatTime(msg.message.timestamp) : 'Just now'}
-                      </p>
-                    </div>
+                    {/* Only show time for student messages */}
+                    {isHuman && (
+                      <div className="flex justify-end mt-1">
+                        <p className="text-xs text-gray-500">
+                          {msg.createdAt ? formatTime(msg.createdAt) : 'Just now'}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               );

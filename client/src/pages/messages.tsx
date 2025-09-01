@@ -34,6 +34,20 @@ export default function Messages() {
     retry: false,
   });
 
+  // Fetch students for name lookup
+  const { data: students } = useQuery({
+    queryKey: ["/api/students"],
+    enabled: isAuthenticated,
+    retry: false,
+  });
+
+  // Create a lookup map for student names
+  const getStudentName = (whatsappId: string) => {
+    if (!Array.isArray(students)) return null;
+    const student = students.find((s: any) => s.whatsappId === whatsappId);
+    return student?.name || null;
+  };
+
   // Reset selected contact when account changes
   useEffect(() => {
     setSelectedContact(null);
@@ -118,16 +132,23 @@ export default function Messages() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <p className="font-medium text-gray-900 truncate" data-testid={`contact-name-${contact.sessionId}`}>
-                            {contact.sessionId}
-                          </p>
-                          <span className="text-xs text-gray-400">
-                            {formatLastActivity(contact.lastActivity)}
-                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-gray-900 truncate" data-testid={`contact-name-${contact.sessionId}`}>
+                              {getStudentName(contact.sessionId) || contact.sessionId}
+                            </p>
+                            <p className="text-xs text-gray-500 truncate">
+                              {contact.sessionId}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-xs text-gray-400 block">
+                              {formatLastActivity(contact.lastActivity)}
+                            </span>
+                            <p className="text-xs text-gray-500">
+                              {contact.messageCount} msg
+                            </p>
+                          </div>
                         </div>
-                        <p className="text-sm text-gray-500 truncate">
-                          {contact.messageCount} messages
-                        </p>
                       </div>
                     </div>
                   </div>
@@ -155,9 +176,9 @@ export default function Messages() {
                   </div>
                   <div>
                     <h3 className="font-medium text-gray-900" data-testid={`chat-header-${selectedContact}`}>
-                      {selectedContact}
+                      {getStudentName(selectedContact) || selectedContact}
                     </h3>
-                    <p className="text-sm text-[#075E54]">WhatsApp Contact</p>
+                    <p className="text-sm text-[#075E54]">{selectedContact}</p>
                   </div>
                 </div>
               </div>
