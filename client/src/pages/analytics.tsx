@@ -107,7 +107,7 @@ export default function Analytics() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-semibold text-slate-900">Analytics Dashboard</h2>
-                <p className="text-slate-500">Combined metrics from both WhatsApp accounts</p>
+                <p className="text-slate-500">Monitor WhatsApp chatbot performance and usage metrics</p>
               </div>
               <div className="flex items-center space-x-2">
                 <Select value={timeRange} onValueChange={handleTimeRangeChange}>
