@@ -16,9 +16,6 @@ import {
   YAxis, 
   CartesianGrid, 
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
   AreaChart,
   Area
 } from "recharts";
@@ -87,11 +84,9 @@ export default function Analytics() {
     messages: item.count,
   })) || [];
 
-  // Calculate message distribution by type
-  const messageTypeData = [
-    { name: 'Student Messages', value: Math.floor(statsData.totalMessages * 0.6), color: '#075E54' },
-    { name: 'AI Responses', value: Math.floor(statsData.totalMessages * 0.4), color: '#25D366' }
-  ];
+  // Since AI responds to every student message, roughly half are AI responses
+  const studentMessages = Math.floor(statsData.totalMessages / 2);
+  const aiMessages = statsData.totalMessages - studentMessages;
 
   // Calculate weekly activity pattern (mock data based on real patterns)
   const weeklyActivityData = [
@@ -194,7 +189,7 @@ export default function Analytics() {
           </div>
 
           {/* Charts Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-1 gap-6 mb-8">
             <Card className="bg-white shadow-sm border-slate-200">
               <CardContent className="p-6">
                 <h3 className="text-lg font-semibold text-slate-900 mb-4">Message Volume Over Time</h3>
@@ -220,45 +215,6 @@ export default function Analytics() {
                       </div>
                     )}
                   </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white shadow-sm border-slate-200">
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold text-slate-900 mb-4">Message Distribution</h3>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={messageTypeData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={100}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {messageTypeData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="mt-4 space-y-2">
-                  {messageTypeData.map((entry, index) => (
-                    <div key={entry.name} className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <div 
-                          className="w-3 h-3 rounded-full mr-2" 
-                          style={{ backgroundColor: entry.color }}
-                        />
-                        <span className="text-sm text-slate-600">{entry.name}</span>
-                      </div>
-                      <span className="text-sm font-medium text-slate-900">{entry.value.toLocaleString()}</span>
-                    </div>
-                  ))}
                 </div>
               </CardContent>
             </Card>
