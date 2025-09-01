@@ -308,13 +308,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Analytics routes
   app.get("/api/analytics", isAuthenticated, async (req, res) => {
     try {
-      const range = req.query.range as string || 'weekly';
-      const stats = await storage.getMessageStats();
+      const range = req.query.range as string || '7days';
+      const stats = await storage.getMessageStats(range);
       const sessions = await storage.getActiveSessions();
+      const totalStudents = await storage.getTotalStudents();
       
       res.json({
         ...stats,
         activeSessions: sessions.length,
+        totalStudents,
         topSessions: sessions.slice(0, 5),
       });
     } catch (error) {

@@ -45,12 +45,13 @@ export interface IStorage {
   getMessagesBySession(sessionId: string): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
   getActiveSessions(): Promise<{ sessionId: string; messageCount: number; lastActivity: Date }[]>;
-  getMessageStats(): Promise<{
+  getMessageStats(timeRange?: string): Promise<{
     totalMessages: number;
     dailyMessages: { date: string; count: number }[];
     weeklyMessages: number;
     monthlyMessages: number;
   }>;
+  getTotalStudents(): Promise<number>;
   
   // Message operations (WhatsApp Account 2)
   getMessages1(sessionId?: string): Promise<Message1[]>;
@@ -183,15 +184,27 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getMessageStats(): Promise<{
+  async getMessageStats(timeRange: string = '7days'): Promise<{
     totalMessages: number;
     dailyMessages: { date: string; count: number }[];
     weeklyMessages: number;
     monthlyMessages: number;
   }> {
+    // Map time ranges to SQL intervals
+    const intervalMap: { [key: string]: string } = {
+      '1day': '1 day',
+      '7days': '7 days', 
+      '30days': '30 days',
+      '6months': '6 months',
+      '1year': '1 year'
+    };
+    
+    const interval = intervalMap[timeRange] || '7 days';
+    
     const [totalResult] = await db
       .select({ count: sql<number>`count(*)` })
-      .from(messages);
+      .from(messages)
+      .where(sql`${messages.createdAt} >= current_date - interval '${sql.raw(interval)}'`);
 
     const [weeklyResult] = await db
       .select({ count: sql<number>`count(*)` })
@@ -209,7 +222,7 @@ export class DatabaseStorage implements IStorage {
         count: sql<number>`count(*)`,
       })
       .from(messages)
-      .where(sql`${messages.createdAt} >= current_date - interval '7 days'`)
+      .where(sql`${messages.createdAt} >= current_date - interval '${sql.raw(interval)}'`)
       .groupBy(sql`date_trunc('day', ${messages.createdAt})`)
       .orderBy(sql`date_trunc('day', ${messages.createdAt})`);
 
@@ -219,6 +232,13 @@ export class DatabaseStorage implements IStorage {
       weeklyMessages: weeklyResult.count,
       monthlyMessages: monthlyResult.count,
     };
+  }
+  
+  async getTotalStudents(): Promise<number> {
+    const [result] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(students);
+    return result.count;
   }
 
   // Message operations for WhatsApp Account 2 (messages1)
