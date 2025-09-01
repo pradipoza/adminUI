@@ -1,7 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search } from "lucide-react";
 
 interface HeaderProps {
   title: string;
@@ -19,14 +17,6 @@ export default function Header({ title, subtitle }: HeaderProps) {
           <p className="text-slate-500">{subtitle}</p>
         </div>
         <div className="flex items-center space-x-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <Input 
-              type="search" 
-              placeholder="Search..."
-              className="pl-10 pr-4 py-2 w-64"
-            />
-          </div>
           <div className="flex items-center space-x-2">
             <Avatar className="h-8 w-8">
               <AvatarImage src={(user as any)?.profileImageUrl || ""} alt="User avatar" />

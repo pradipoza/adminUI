@@ -1,8 +1,5 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { User, X } from "lucide-react";
 
 interface ChatInterfaceProps {
   sessionId: string;
@@ -19,7 +16,6 @@ interface Message {
 }
 
 export default function ChatInterface({ sessionId, account = 'account1' }: ChatInterfaceProps) {
-  const [showChat, setShowChat] = useState(true);
 
   const endpoint = account === 'account1' ? '/api/messages' : '/api/messages1';
   
@@ -45,34 +41,8 @@ export default function ChatInterface({ sessionId, account = 'account1' }: ChatI
     });
   };
 
-  if (!showChat) {
-    return null;
-  }
-
   return (
-    <div className="border border-slate-200 rounded-lg h-96 flex flex-col">
-      <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 rounded-t-lg">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-slate-300 rounded-full flex items-center justify-center">
-              <User className="w-4 h-4 text-slate-600" />
-            </div>
-            <div>
-              <p className="font-medium text-slate-900">{sessionId}</p>
-              <p className="text-sm text-slate-500">WhatsApp Session</p>
-            </div>
-          </div>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => setShowChat(false)} 
-            className="text-slate-400 hover:text-slate-600"
-          >
-            <X className="w-5 h-5" />
-          </Button>
-        </div>
-      </div>
-      
+    <div className="h-full flex flex-col">
       <ScrollArea className="flex-1 p-4 bg-gradient-to-b from-green-50 to-green-100" style={{
         backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d1fae5' fill-opacity='0.4'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
       }}>
