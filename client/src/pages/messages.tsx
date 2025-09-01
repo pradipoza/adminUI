@@ -33,7 +33,7 @@ export default function Messages() {
   }, [isAuthenticated, isLoading, toast]);
 
   const { data: sessions, isLoading: sessionsLoading } = useQuery({
-    queryKey: [activeAccount === 'account1' ? "/api/messages/sessions" : "/api/messages1/sessions", activeAccount],
+    queryKey: [activeAccount === 'account1' ? "/api/messages/sessions" : "/api/messages1/sessions"],
     enabled: isAuthenticated,
     retry: false,
   });
