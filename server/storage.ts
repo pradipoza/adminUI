@@ -51,8 +51,16 @@ export interface IStorage {
     weeklyMessages: number;
     monthlyMessages: number;
   }>;
+  getCombinedMessageStats(timeRange?: string): Promise<{
+    totalMessages: number;
+    dailyMessages: { date: string; count: number }[];
+    weeklyMessages: number;
+    monthlyMessages: number;
+  }>;
   getWeeklyActivity(): Promise<{ day: string; messages: number }[]>;
+  getCombinedWeeklyActivity(): Promise<{ day: string; messages: number }[]>;
   getTotalStudents(): Promise<number>;
+  getCombinedActiveSessions(): Promise<{ sessionId: string; messageCount: number; lastActivity: Date }[]>;
   
   // Message operations (WhatsApp Account 2)
   getMessages1(sessionId?: string): Promise<Message1[]>;
@@ -278,6 +286,161 @@ export class DatabaseStorage implements IStorage {
       day,
       messages: activityMap.get(day) || 0
     }));
+  }
+
+  async getCombinedMessageStats(timeRange: string = '7days'): Promise<{
+    totalMessages: number;
+    dailyMessages: { date: string; count: number }[];
+    weeklyMessages: number;
+    monthlyMessages: number;
+  }> {
+    // Map time ranges to SQL intervals
+    const intervalMap: { [key: string]: string } = {
+      '1day': '1 day',
+      '7days': '7 days', 
+      '30days': '30 days',
+      '6months': '6 months',
+      '1year': '1 year'
+    };
+    
+    const interval = intervalMap[timeRange] || '7 days';
+    
+    // Get total messages from both tables
+    const [totalResult1] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(messages)
+      .where(sql`${messages.createdAt} >= current_date - interval '${sql.raw(interval)}'`);
+      
+    const [totalResult2] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(messages1)
+      .where(sql`${messages1.createdAt} >= current_date - interval '${sql.raw(interval)}'`);
+
+    // Get weekly messages from both tables
+    const [weeklyResult1] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(messages)
+      .where(sql`${messages.createdAt} >= current_date - interval '7 days'`);
+      
+    const [weeklyResult2] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(messages1)
+      .where(sql`${messages1.createdAt} >= current_date - interval '7 days'`);
+
+    // Get monthly messages from both tables
+    const [monthlyResult1] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(messages)
+      .where(sql`${messages.createdAt} >= current_date - interval '30 days'`);
+      
+    const [monthlyResult2] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(messages1)
+      .where(sql`${messages1.createdAt} >= current_date - interval '30 days'`);
+
+    // Get daily messages from both tables
+    const dailyMessages1 = await db
+      .select({
+        date: sql<string>`date_trunc('day', ${messages.createdAt})::date`,
+        count: sql<number>`count(*)`,
+      })
+      .from(messages)
+      .where(sql`${messages.createdAt} >= current_date - interval '${sql.raw(interval)}'`)
+      .groupBy(sql`date_trunc('day', ${messages.createdAt})`)
+      .orderBy(sql`date_trunc('day', ${messages.createdAt})`);
+      
+    const dailyMessages2 = await db
+      .select({
+        date: sql<string>`date_trunc('day', ${messages1.createdAt})::date`,
+        count: sql<number>`count(*)`,
+      })
+      .from(messages1)
+      .where(sql`${messages1.createdAt} >= current_date - interval '${sql.raw(interval)}'`)
+      .groupBy(sql`date_trunc('day', ${messages1.createdAt})`)
+      .orderBy(sql`date_trunc('day', ${messages1.createdAt})`);
+
+    // Combine daily messages
+    const dailyMap = new Map<string, number>();
+    
+    dailyMessages1.forEach(row => {
+      dailyMap.set(row.date, (dailyMap.get(row.date) || 0) + row.count);
+    });
+    
+    dailyMessages2.forEach(row => {
+      dailyMap.set(row.date, (dailyMap.get(row.date) || 0) + row.count);
+    });
+    
+    const combinedDailyMessages = Array.from(dailyMap.entries())
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    return {
+      totalMessages: totalResult1.count + totalResult2.count,
+      dailyMessages: combinedDailyMessages,
+      weeklyMessages: weeklyResult1.count + weeklyResult2.count,
+      monthlyMessages: monthlyResult1.count + monthlyResult2.count,
+    };
+  }
+
+  async getCombinedWeeklyActivity(): Promise<{ day: string; messages: number }[]> {
+    // Get weekly activity from both tables
+    const weeklyActivity1 = await db
+      .select({
+        day: sql<string>`to_char(${messages.createdAt}, 'Day')`,
+        messages: sql<number>`count(*)`
+      })
+      .from(messages)
+      .where(sql`${messages.createdAt} >= current_date - interval '7 days'`)
+      .groupBy(sql`to_char(${messages.createdAt}, 'Day'), extract(dow from ${messages.createdAt})`)
+      .orderBy(sql`extract(dow from ${messages.createdAt})`);
+      
+    const weeklyActivity2 = await db
+      .select({
+        day: sql<string>`to_char(${messages1.createdAt}, 'Day')`,
+        messages: sql<number>`count(*)`
+      })
+      .from(messages1)
+      .where(sql`${messages1.createdAt} >= current_date - interval '7 days'`)
+      .groupBy(sql`to_char(${messages1.createdAt}, 'Day'), extract(dow from ${messages1.createdAt})`)
+      .orderBy(sql`extract(dow from ${messages1.createdAt})`);
+
+    // Map full day names to short forms and ensure all days are represented
+    const dayMap: { [key: string]: string } = {
+      'Sunday   ': 'Sun',
+      'Monday   ': 'Mon', 
+      'Tuesday  ': 'Tue',
+      'Wednesday': 'Wed',
+      'Thursday ': 'Thu',
+      'Friday   ': 'Fri',
+      'Saturday ': 'Sat'
+    };
+
+    const allDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const activityMap = new Map<string, number>();
+    
+    // Fill in the actual data from both tables
+    weeklyActivity1.forEach(row => {
+      const shortDay = dayMap[row.day] || row.day.trim().substring(0, 3);
+      activityMap.set(shortDay, (activityMap.get(shortDay) || 0) + row.messages);
+    });
+    
+    weeklyActivity2.forEach(row => {
+      const shortDay = dayMap[row.day] || row.day.trim().substring(0, 3);
+      activityMap.set(shortDay, (activityMap.get(shortDay) || 0) + row.messages);
+    });
+
+    // Return all days with 0 for missing days
+    return allDays.map(day => ({
+      day,
+      messages: activityMap.get(day) || 0
+    }));
+  }
+
+  async getCombinedActiveSessions(): Promise<{ sessionId: string; messageCount: number; lastActivity: Date }[]> {
+    const sessions1 = await this.getActiveSessions();
+    const sessions2 = await this.getActiveSessions1();
+    
+    return [...sessions1, ...sessions2];
   }
 
   // Message operations for WhatsApp Account 2 (messages1)
