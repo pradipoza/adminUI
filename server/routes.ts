@@ -312,11 +312,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stats = await storage.getMessageStats(range);
       const sessions = await storage.getActiveSessions();
       const totalStudents = await storage.getTotalStudents();
+      const weeklyActivity = await storage.getWeeklyActivity();
       
       res.json({
         ...stats,
         activeSessions: sessions.length,
         totalStudents,
+        weeklyActivity,
         topSessions: sessions.slice(0, 5),
       });
     } catch (error) {

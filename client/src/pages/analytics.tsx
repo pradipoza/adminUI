@@ -75,7 +75,8 @@ export default function Analytics() {
     monthlyMessages: 0,
     activeSessions: 0,
     totalStudents: 0,
-    dailyMessages: [] as Array<{ date: string; count: number }>
+    dailyMessages: [] as Array<{ date: string; count: number }>,
+    weeklyActivity: [] as Array<{ day: string; messages: number }>
   };
 
   // Transform daily messages data for charts
@@ -88,16 +89,8 @@ export default function Analytics() {
   const studentMessages = Math.floor(statsData.totalMessages / 2);
   const aiMessages = statsData.totalMessages - studentMessages;
 
-  // Calculate weekly activity pattern (mock data based on real patterns)
-  const weeklyActivityData = [
-    { day: 'Mon', messages: Math.floor(statsData.weeklyMessages * 0.12) },
-    { day: 'Tue', messages: Math.floor(statsData.weeklyMessages * 0.15) },
-    { day: 'Wed', messages: Math.floor(statsData.weeklyMessages * 0.18) },
-    { day: 'Thu', messages: Math.floor(statsData.weeklyMessages * 0.16) },
-    { day: 'Fri', messages: Math.floor(statsData.weeklyMessages * 0.14) },
-    { day: 'Sat', messages: Math.floor(statsData.weeklyMessages * 0.13) },
-    { day: 'Sun', messages: Math.floor(statsData.weeklyMessages * 0.12) }
-  ];
+  // Use real weekly activity data from the API
+  const weeklyActivityData = statsData.weeklyActivity || [];
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -143,7 +136,7 @@ export default function Analytics() {
                 </div>
                 <p className="text-3xl font-bold text-slate-900">{statsData.totalMessages.toLocaleString()}</p>
                 <p className="text-sm text-slate-500 mt-2">
-                  All conversations in selected period
+                  AI Messages: {Math.floor(statsData.totalMessages / 2).toLocaleString()}
                 </p>
               </CardContent>
             </Card>
@@ -198,8 +191,21 @@ export default function Analytics() {
                     {chartData.length > 0 ? (
                       <AreaChart data={chartData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                        <XAxis dataKey="date" stroke="#64748b" fontSize={12} />
-                        <YAxis stroke="#64748b" fontSize={12} />
+                        <XAxis 
+                          dataKey="date" 
+                          stroke="#64748b" 
+                          fontSize={12}
+                          interval={0}
+                          angle={-45}
+                          textAnchor="end"
+                          height={60}
+                        />
+                        <YAxis 
+                          stroke="#64748b" 
+                          fontSize={12}
+                          domain={['dataMin', 'dataMax']}
+                          tickCount={5}
+                        />
                         <Area 
                           type="monotone" 
                           dataKey="messages" 
@@ -270,18 +276,6 @@ export default function Analytics() {
                     </div>
                   </div>
                   
-                  <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <Clock className="w-5 h-5 text-blue-600" />
-                      <div>
-                        <p className="font-medium text-slate-900">Response Coverage</p>
-                        <p className="text-sm text-slate-500">Messages with AI responses</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-blue-600">87%</p>
-                    </div>
-                  </div>
                 </div>
               </CardContent>
             </Card>

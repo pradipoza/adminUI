@@ -51,6 +51,7 @@ export interface IStorage {
     weeklyMessages: number;
     monthlyMessages: number;
   }>;
+  getWeeklyActivity(): Promise<{ day: string; messages: number }[]>;
   getTotalStudents(): Promise<number>;
   
   // Message operations (WhatsApp Account 2)
@@ -239,6 +240,44 @@ export class DatabaseStorage implements IStorage {
       .select({ count: sql<number>`count(*)` })
       .from(students);
     return result.count;
+  }
+
+  async getWeeklyActivity(): Promise<{ day: string; messages: number }[]> {
+    const weeklyActivity = await db
+      .select({
+        day: sql<string>`to_char(${messages.createdAt}, 'Day')`,
+        messages: sql<number>`count(*)`
+      })
+      .from(messages)
+      .where(sql`${messages.createdAt} >= current_date - interval '7 days'`)
+      .groupBy(sql`to_char(${messages.createdAt}, 'Day'), extract(dow from ${messages.createdAt})`)
+      .orderBy(sql`extract(dow from ${messages.createdAt})`);
+
+    // Map full day names to short forms and ensure all days are represented
+    const dayMap: { [key: string]: string } = {
+      'Sunday   ': 'Sun',
+      'Monday   ': 'Mon', 
+      'Tuesday  ': 'Tue',
+      'Wednesday': 'Wed',
+      'Thursday ': 'Thu',
+      'Friday   ': 'Fri',
+      'Saturday ': 'Sat'
+    };
+
+    const allDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const activityMap = new Map<string, number>();
+    
+    // Fill in the actual data
+    weeklyActivity.forEach(row => {
+      const shortDay = dayMap[row.day] || row.day.trim().substring(0, 3);
+      activityMap.set(shortDay, row.messages);
+    });
+
+    // Return all days with 0 for missing days
+    return allDays.map(day => ({
+      day,
+      messages: activityMap.get(day) || 0
+    }));
   }
 
   // Message operations for WhatsApp Account 2 (messages1)
