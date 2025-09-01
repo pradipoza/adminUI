@@ -6,7 +6,7 @@ import passport from "passport";
 import { documentService } from "./services/documentService";
 import { openaiService } from "./services/openaiService";
 import multer from "multer";
-import { insertDocumentSchema, insertMessageSchema, loginSchema, registerSchema, updateProfileSchema } from "@shared/schema";
+import { insertDocumentSchema, insertMessageSchema, insertMessage1Schema, loginSchema, registerSchema, updateProfileSchema } from "@shared/schema";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -268,6 +268,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(message);
     } catch (error) {
       console.error("Error creating message:", error);
+      res.status(500).json({ message: "Failed to create message" });
+    }
+  });
+
+  // Message routes for WhatsApp Account 2
+  app.get("/api/messages1", isAuthenticated, async (req, res) => {
+    try {
+      const sessionId = req.query.session_id as string;
+      const messages = await storage.getMessages1(sessionId);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching messages1:", error);
+      res.status(500).json({ message: "Failed to fetch messages" });
+    }
+  });
+
+  app.get("/api/messages1/sessions", isAuthenticated, async (req, res) => {
+    try {
+      const sessions = await storage.getActiveSessions1();
+      res.json(sessions);
+    } catch (error) {
+      console.error("Error fetching sessions1:", error);
+      res.status(500).json({ message: "Failed to fetch sessions" });
+    }
+  });
+
+  app.post("/api/messages1", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertMessage1Schema.parse(req.body);
+      const message = await storage.createMessage1(validatedData);
+      res.json(message);
+    } catch (error) {
+      console.error("Error creating message1:", error);
       res.status(500).json({ message: "Failed to create message" });
     }
   });

@@ -8,12 +8,14 @@ import Header from "@/components/layout/header";
 import ChatInterface from "@/components/chat/chat-interface";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { User, MessageSquare } from "lucide-react";
 
 export default function Messages() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
+  const [activeAccount, setActiveAccount] = useState<'account1' | 'account2'>('account1');
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -31,10 +33,15 @@ export default function Messages() {
   }, [isAuthenticated, isLoading, toast]);
 
   const { data: sessions, isLoading: sessionsLoading } = useQuery({
-    queryKey: ["/api/messages/sessions"],
+    queryKey: [activeAccount === 'account1' ? "/api/messages/sessions" : "/api/messages1/sessions", activeAccount],
     enabled: isAuthenticated,
     retry: false,
   });
+
+  // Reset selected session when account changes
+  useEffect(() => {
+    setSelectedSession(null);
+  }, [activeAccount]);
 
   if (isLoading) {
     return <div className="min-h-screen bg-slate-50 flex items-center justify-center">Loading...</div>;
@@ -68,9 +75,33 @@ export default function Messages() {
           <div className="grid grid-cols-1 gap-6 h-full">
             <Card className="bg-white shadow-sm border-slate-200">
               <CardContent className="p-0">
+                {/* WhatsApp Account Tabs */}
+                <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
+                  <div className="flex space-x-1">
+                    <Button
+                      variant={activeAccount === 'account1' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setActiveAccount('account1')}
+                      data-testid="button-whatsapp-account1"
+                    >
+                      WhatsApp Account 1
+                    </Button>
+                    <Button
+                      variant={activeAccount === 'account2' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setActiveAccount('account2')}
+                      data-testid="button-whatsapp-account2"
+                    >
+                      WhatsApp Account 2
+                    </Button>
+                  </div>
+                </div>
+                
                 <div className="px-6 py-4 border-b border-slate-200">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-slate-900">Message History</h3>
+                    <h3 className="font-semibold text-slate-900">
+                      Message History - {activeAccount === 'account1' ? 'WhatsApp Account 1' : 'WhatsApp Account 2'}
+                    </h3>
                     <div className="flex items-center space-x-2">
                       <Select value={selectedSession || "all"} onValueChange={(value) => setSelectedSession(value === "all" ? null : value)}>
                         <SelectTrigger className="w-48">
@@ -129,7 +160,7 @@ export default function Messages() {
                   
                   {/* Chat Interface */}
                   {selectedSession ? (
-                    <ChatInterface sessionId={selectedSession} />
+                    <ChatInterface sessionId={selectedSession} account={activeAccount} />
                   ) : (
                     <div className="text-center py-12">
                       <div className="w-16 h-16 bg-slate-100 rounded-full mx-auto mb-4 flex items-center justify-center">

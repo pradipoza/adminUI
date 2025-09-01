@@ -6,6 +6,7 @@ import { User, X } from "lucide-react";
 
 interface ChatInterfaceProps {
   sessionId: string;
+  account?: 'account1' | 'account2';
 }
 
 interface Message {
@@ -17,13 +18,15 @@ interface Message {
   };
 }
 
-export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
+export default function ChatInterface({ sessionId, account = 'account1' }: ChatInterfaceProps) {
   const [showChat, setShowChat] = useState(true);
 
+  const endpoint = account === 'account1' ? '/api/messages' : '/api/messages1';
+  
   const { data: messages, isLoading } = useQuery({
-    queryKey: ["/api/messages", sessionId],
+    queryKey: [endpoint, sessionId, account],
     queryFn: async () => {
-      const url = new URL('/api/messages', window.location.origin);
+      const url = new URL(endpoint, window.location.origin);
       url.searchParams.set('session_id', sessionId);
       const response = await fetch(url.toString());
       if (!response.ok) {

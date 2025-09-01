@@ -3,6 +3,7 @@ import {
   documents,
   chunks,
   messages,
+  messages1,
   type User,
   type UpsertUser,
   type Document,
@@ -11,6 +12,8 @@ import {
   type InsertChunk,
   type Message,
   type InsertMessage,
+  type Message1,
+  type InsertMessage1,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, sql, and } from "drizzle-orm";
@@ -34,12 +37,24 @@ export interface IStorage {
   deleteChunksByDocumentId(documentId: number): Promise<void>;
   searchSimilarChunks(queryEmbedding: number[], limit?: number): Promise<{ chunkText: string; similarity: number }[]>;
   
-  // Message operations
+  // Message operations (WhatsApp Account 1)
   getMessages(sessionId?: string): Promise<Message[]>;
   getMessagesBySession(sessionId: string): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
   getActiveSessions(): Promise<{ sessionId: string; messageCount: number; lastActivity: Date }[]>;
   getMessageStats(): Promise<{
+    totalMessages: number;
+    dailyMessages: { date: string; count: number }[];
+    weeklyMessages: number;
+    monthlyMessages: number;
+  }>;
+  
+  // Message operations (WhatsApp Account 2)
+  getMessages1(sessionId?: string): Promise<Message1[]>;
+  getMessagesBySession1(sessionId: string): Promise<Message1[]>;
+  createMessage1(message: InsertMessage1): Promise<Message1>;
+  getActiveSessions1(): Promise<{ sessionId: string; messageCount: number; lastActivity: Date }[]>;
+  getMessageStats1(): Promise<{
     totalMessages: number;
     dailyMessages: { date: string; count: number }[];
     weeklyMessages: number;
@@ -187,6 +202,80 @@ export class DatabaseStorage implements IStorage {
       .where(sql`${messages.createdAt} >= current_date - interval '7 days'`)
       .groupBy(sql`date_trunc('day', ${messages.createdAt})`)
       .orderBy(sql`date_trunc('day', ${messages.createdAt})`);
+
+    return {
+      totalMessages: totalResult.count,
+      dailyMessages,
+      weeklyMessages: weeklyResult.count,
+      monthlyMessages: monthlyResult.count,
+    };
+  }
+
+  // Message operations for WhatsApp Account 2 (messages1)
+  async getMessages1(sessionId?: string): Promise<Message1[]> {
+    if (sessionId) {
+      return await db.select().from(messages1)
+        .where(eq(messages1.sessionId, sessionId))
+        .orderBy(asc(messages1.createdAt));
+    }
+    return await db.select().from(messages1).orderBy(desc(messages1.createdAt)).limit(100);
+  }
+
+  async getMessagesBySession1(sessionId: string): Promise<Message1[]> {
+    return await db.select().from(messages1)
+      .where(eq(messages1.sessionId, sessionId))
+      .orderBy(asc(messages1.createdAt));
+  }
+
+  async createMessage1(message: InsertMessage1): Promise<Message1> {
+    const [newMessage] = await db.insert(messages1).values(message).returning();
+    return newMessage;
+  }
+
+  async getActiveSessions1(): Promise<{ sessionId: string; messageCount: number; lastActivity: Date }[]> {
+    const result = await db
+      .select({
+        sessionId: messages1.sessionId,
+        messageCount: sql<number>`count(*)`,
+        lastActivity: sql<Date>`max(${messages1.createdAt})`,
+      })
+      .from(messages1)
+      .groupBy(messages1.sessionId)
+      .orderBy(sql`max(${messages1.createdAt}) desc`)
+      .limit(10);
+    
+    return result;
+  }
+
+  async getMessageStats1(): Promise<{
+    totalMessages: number;
+    dailyMessages: { date: string; count: number }[];
+    weeklyMessages: number;
+    monthlyMessages: number;
+  }> {
+    const [totalResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(messages1);
+
+    const [weeklyResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(messages1)
+      .where(sql`${messages1.createdAt} >= current_date - interval '7 days'`);
+
+    const [monthlyResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(messages1)
+      .where(sql`${messages1.createdAt} >= current_date - interval '30 days'`);
+
+    const dailyMessages = await db
+      .select({
+        date: sql<string>`date_trunc('day', ${messages1.createdAt})::date`,
+        count: sql<number>`count(*)`,
+      })
+      .from(messages1)
+      .where(sql`${messages1.createdAt} >= current_date - interval '7 days'`)
+      .groupBy(sql`date_trunc('day', ${messages1.createdAt})`)
+      .orderBy(sql`date_trunc('day', ${messages1.createdAt})`);
 
     return {
       totalMessages: totalResult.count,

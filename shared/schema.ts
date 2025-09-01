@@ -68,8 +68,16 @@ export const chunks = pgTable("chunks", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Messages table for WhatsApp chat logs
+// Messages table for WhatsApp chat logs (WhatsApp Account 1)
 export const messages = pgTable("messages", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").notNull(),
+  message: jsonb("message").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Messages table for WhatsApp chat logs (WhatsApp Account 2)
+export const messages1 = pgTable("messages1", {
   id: serial("id").primaryKey(),
   sessionId: text("session_id").notNull(),
   message: jsonb("message").notNull(),
@@ -89,6 +97,9 @@ export type Chunk = typeof chunks.$inferSelect;
 export type InsertMessage = typeof messages.$inferInsert;
 export type Message = typeof messages.$inferSelect;
 
+export type InsertMessage1 = typeof messages1.$inferInsert;
+export type Message1 = typeof messages1.$inferSelect;
+
 // Zod schemas
 export const insertDocumentSchema = createInsertSchema(documents).pick({
   title: true,
@@ -97,6 +108,11 @@ export const insertDocumentSchema = createInsertSchema(documents).pick({
 });
 
 export const insertMessageSchema = createInsertSchema(messages).pick({
+  sessionId: true,
+  message: true,
+});
+
+export const insertMessage1Schema = createInsertSchema(messages1).pick({
   sessionId: true,
   message: true,
 });
