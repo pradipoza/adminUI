@@ -5,6 +5,8 @@ import {
   messages,
   messages1,
   students,
+  payments,
+  settings,
   type User,
   type UpsertUser,
   type Document,
@@ -17,15 +19,20 @@ import {
   type InsertMessage1,
   type Student,
   type InsertStudent,
+  type Payment,
+  type InsertPayment,
+  type Setting,
+  type InsertSetting,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, asc, sql, and } from "drizzle-orm";
+import { eq, desc, asc, sql, and, ne } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
-  // User operations (IMPORTANT) these user operations are mandatory for Replit Auth.
+  // User operations
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  getAllClients(): Promise<User[]>;
   
   // Document operations
   getDocuments(): Promise<Document[]>;
@@ -53,6 +60,7 @@ export interface IStorage {
   }>;
   getWeeklyActivity(): Promise<{ day: string; messages: number }[]>;
   getTotalStudents(): Promise<number>;
+  getAIMessageCount(clientId?: string): Promise<number>;
   
   // Message operations (WhatsApp Account 2)
   getMessages1(sessionId?: string): Promise<Message1[]>;
@@ -72,10 +80,30 @@ export interface IStorage {
   createStudent(student: InsertStudent): Promise<Student>;
   updateStudent(whatsappId: string, updates: Partial<InsertStudent>): Promise<Student>;
   deleteStudent(whatsappId: string): Promise<void>;
+  
+  // Payment operations
+  getPayments(clientId?: string): Promise<Payment[]>;
+  getPayment(id: number): Promise<Payment | undefined>;
+  createPayment(payment: InsertPayment): Promise<Payment>;
+  updatePayment(id: number, updates: Partial<InsertPayment>): Promise<Payment>;
+  getClientPaymentDue(clientId: string): Promise<{ totalDue: number; amountPaid: number; balance: number }>;
+  
+  // Settings operations
+  getSetting(key: string): Promise<Setting | undefined>;
+  setSetting(key: string, value: string): Promise<Setting>;
+  
+  // Super admin analytics
+  getSuperAdminAnalytics(): Promise<{
+    totalClients: number;
+    totalMessages: number;
+    totalStudents: number;
+    totalRevenue: number;
+    pendingPayments: number;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
-  // User operations (IMPORTANT) these user operations are mandatory for Replit Auth.
+  // User operations
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
@@ -94,6 +122,10 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return user;
+  }
+
+  async getAllClients(): Promise<User[]> {
+    return await db.select().from(users).where(eq(users.role, 'client')).orderBy(desc(users.createdAt));
   }
 
   // Document operations
@@ -134,7 +166,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchSimilarChunks(queryEmbedding: number[], limit: number = 3): Promise<{ chunkText: string; similarity: number }[]> {
-    // Use pgvector's cosine distance operator for efficient similarity search
     const results = await db.execute(
       sql`SELECT chunk_text, 1 - (embedding <=> ${JSON.stringify(queryEmbedding)}::vector) as similarity 
           FROM chunks 
@@ -191,7 +222,6 @@ export class DatabaseStorage implements IStorage {
     weeklyMessages: number;
     monthlyMessages: number;
   }> {
-    // Map time ranges to SQL intervals
     const intervalMap: { [key: string]: string } = {
       '1day': '1 day',
       '7days': '7 days', 
@@ -242,6 +272,13 @@ export class DatabaseStorage implements IStorage {
     return result.count;
   }
 
+  async getAIMessageCount(clientId?: string): Promise<number> {
+    const result = await db.execute(
+      sql`SELECT COUNT(*) as count FROM messages WHERE message->>'type' = 'ai'`
+    );
+    return parseInt((result.rows[0] as any)?.count || '0');
+  }
+
   async getWeeklyActivity(): Promise<{ day: string; messages: number }[]> {
     const weeklyActivity = await db
       .select({
@@ -253,7 +290,6 @@ export class DatabaseStorage implements IStorage {
       .groupBy(sql`to_char(${messages.createdAt}, 'Day'), extract(dow from ${messages.createdAt})`)
       .orderBy(sql`extract(dow from ${messages.createdAt})`);
 
-    // Map full day names to short forms and ensure all days are represented
     const dayMap: { [key: string]: string } = {
       'Sunday   ': 'Sun',
       'Monday   ': 'Mon', 
@@ -267,20 +303,18 @@ export class DatabaseStorage implements IStorage {
     const allDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const activityMap = new Map<string, number>();
     
-    // Fill in the actual data
     weeklyActivity.forEach(row => {
       const shortDay = dayMap[row.day] || row.day.trim().substring(0, 3);
       activityMap.set(shortDay, row.messages);
     });
 
-    // Return all days with 0 for missing days
     return allDays.map(day => ({
       day,
       messages: activityMap.get(day) || 0
     }));
   }
 
-  // Message operations for WhatsApp Account 2 (messages1)
+  // Message operations for WhatsApp Account 2
   async getMessages1(sessionId?: string): Promise<Message1[]> {
     if (sessionId) {
       return await db.select().from(messages1)
@@ -380,6 +414,115 @@ export class DatabaseStorage implements IStorage {
 
   async deleteStudent(whatsappId: string): Promise<void> {
     await db.delete(students).where(eq(students.whatsappId, whatsappId));
+  }
+
+  // Payment operations
+  async getPayments(clientId?: string): Promise<Payment[]> {
+    if (clientId) {
+      return await db.select().from(payments)
+        .where(eq(payments.clientId, clientId))
+        .orderBy(desc(payments.year), desc(payments.month));
+    }
+    return await db.select().from(payments).orderBy(desc(payments.year), desc(payments.month));
+  }
+
+  async getPayment(id: number): Promise<Payment | undefined> {
+    const [payment] = await db.select().from(payments).where(eq(payments.id, id));
+    return payment;
+  }
+
+  async createPayment(payment: InsertPayment): Promise<Payment> {
+    const [newPayment] = await db.insert(payments).values(payment).returning();
+    return newPayment;
+  }
+
+  async updatePayment(id: number, updates: Partial<InsertPayment>): Promise<Payment> {
+    const [updatedPayment] = await db
+      .update(payments)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(payments.id, id))
+      .returning();
+    return updatedPayment;
+  }
+
+  async getClientPaymentDue(clientId: string): Promise<{ totalDue: number; amountPaid: number; balance: number }> {
+    const clientPayments = await db.select().from(payments).where(eq(payments.clientId, clientId));
+    
+    let totalDue = 0;
+    let amountPaid = 0;
+    
+    clientPayments.forEach(p => {
+      totalDue += parseFloat(p.totalDue);
+      amountPaid += parseFloat(p.amountPaid);
+    });
+    
+    return {
+      totalDue,
+      amountPaid,
+      balance: totalDue - amountPaid
+    };
+  }
+
+  // Settings operations
+  async getSetting(key: string): Promise<Setting | undefined> {
+    const [setting] = await db.select().from(settings).where(eq(settings.key, key));
+    return setting;
+  }
+
+  async setSetting(key: string, value: string): Promise<Setting> {
+    const existing = await this.getSetting(key);
+    if (existing) {
+      const [updated] = await db
+        .update(settings)
+        .set({ value, updatedAt: new Date() })
+        .where(eq(settings.key, key))
+        .returning();
+      return updated;
+    } else {
+      const [newSetting] = await db
+        .insert(settings)
+        .values({ key, value })
+        .returning();
+      return newSetting;
+    }
+  }
+
+  // Super admin analytics
+  async getSuperAdminAnalytics(): Promise<{
+    totalClients: number;
+    totalMessages: number;
+    totalStudents: number;
+    totalRevenue: number;
+    pendingPayments: number;
+  }> {
+    const [clientCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(eq(users.role, 'client'));
+
+    const [messageCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(messages);
+
+    const [studentCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(students);
+
+    const revenueResult = await db.execute(
+      sql`SELECT COALESCE(SUM(CAST(amount_paid AS DECIMAL)), 0) as total FROM payments`
+    );
+
+    const pendingResult = await db.execute(
+      sql`SELECT COALESCE(SUM(CAST(total_due AS DECIMAL) - CAST(amount_paid AS DECIMAL)), 0) as pending FROM payments WHERE status != 'paid'`
+    );
+
+    return {
+      totalClients: clientCount.count,
+      totalMessages: messageCount.count,
+      totalStudents: studentCount.count,
+      totalRevenue: parseFloat((revenueResult.rows[0] as any)?.total || '0'),
+      pendingPayments: parseFloat((pendingResult.rows[0] as any)?.pending || '0'),
+    };
   }
 }
 

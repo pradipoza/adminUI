@@ -9,6 +9,8 @@ import {
   integer,
   serial,
   customType,
+  decimal,
+  pgEnum,
 } from "drizzle-orm/pg-core";
 
 // Define custom vector type for pgvector
@@ -26,6 +28,9 @@ const vector = customType<{ data: number[]; driverData: string }>({
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// User role enum
+export const userRoleEnum = pgEnum('user_role', ['super_admin', 'client']);
+
 // Session storage table.
 // (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const sessions = pgTable(
@@ -42,10 +47,11 @@ export const sessions = pgTable(
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: varchar("email").unique().notNull(),
-  password: varchar("password").notNull(), // Hashed password
+  password: varchar("password").notNull(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  role: userRoleEnum("role").default('client').notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -56,6 +62,7 @@ export const documents = pgTable("documents", {
   title: text("title").notNull(),
   filename: text("filename").notNull(),
   content: text("content").notNull(),
+  clientId: varchar("client_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -64,7 +71,7 @@ export const chunks = pgTable("chunks", {
   id: serial("id").primaryKey(),
   documentId: integer("document_id").references(() => documents.id, { onDelete: 'cascade' }).notNull(),
   chunkText: text("chunk_text").notNull(),
-  embedding: vector("embedding"), // pgvector column for embeddings
+  embedding: vector("embedding"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -73,6 +80,7 @@ export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
   sessionId: text("session_id").notNull(),
   message: jsonb("message").notNull(),
+  clientId: varchar("client_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -81,6 +89,7 @@ export const messages1 = pgTable("messages1", {
   id: serial("id").primaryKey(),
   sessionId: text("session_id").notNull(),
   message: jsonb("message").notNull(),
+  clientId: varchar("client_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -88,6 +97,32 @@ export const messages1 = pgTable("messages1", {
 export const students = pgTable("students", {
   whatsappId: text("whatsapp_id").primaryKey(),
   name: text("name"),
+  clientId: varchar("client_id").references(() => users.id),
+});
+
+// Payments table for tracking client payments
+export const payments = pgTable("payments", {
+  id: serial("id").primaryKey(),
+  clientId: varchar("client_id").references(() => users.id).notNull(),
+  month: varchar("month").notNull(),
+  year: integer("year").notNull(),
+  aiMessageCount: integer("ai_message_count").default(0).notNull(),
+  ratePerMessage: decimal("rate_per_message", { precision: 10, scale: 2 }).default('1.50').notNull(),
+  totalDue: decimal("total_due", { precision: 10, scale: 2 }).default('0').notNull(),
+  amountPaid: decimal("amount_paid", { precision: 10, scale: 2 }).default('0').notNull(),
+  status: varchar("status").default('pending').notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Settings table for super admin settings (like QR code)
+export const settings = pgTable("settings", {
+  id: serial("id").primaryKey(),
+  key: varchar("key").unique().notNull(),
+  value: text("value"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Type exports
@@ -109,26 +144,54 @@ export type Message1 = typeof messages1.$inferSelect;
 export type InsertStudent = typeof students.$inferInsert;
 export type Student = typeof students.$inferSelect;
 
+export type InsertPayment = typeof payments.$inferInsert;
+export type Payment = typeof payments.$inferSelect;
+
+export type InsertSetting = typeof settings.$inferInsert;
+export type Setting = typeof settings.$inferSelect;
+
 // Zod schemas
 export const insertDocumentSchema = createInsertSchema(documents).pick({
   title: true,
   filename: true,
   content: true,
+  clientId: true,
 });
 
 export const insertMessageSchema = createInsertSchema(messages).pick({
   sessionId: true,
   message: true,
+  clientId: true,
 });
 
 export const insertMessage1Schema = createInsertSchema(messages1).pick({
   sessionId: true,
   message: true,
+  clientId: true,
 });
 
 export const insertStudentSchema = createInsertSchema(students).pick({
   whatsappId: true,
   name: true,
+  clientId: true,
+});
+
+export const insertPaymentSchema = createInsertSchema(payments).pick({
+  clientId: true,
+  month: true,
+  year: true,
+  aiMessageCount: true,
+  ratePerMessage: true,
+  totalDue: true,
+  amountPaid: true,
+  status: true,
+  notes: true,
+});
+
+export const updatePaymentSchema = z.object({
+  amountPaid: z.string().optional(),
+  status: z.enum(['pending', 'partial', 'paid']).optional(),
+  notes: z.string().optional(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -136,6 +199,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
   firstName: true,
   lastName: true,
+  role: true,
 });
 
 export const loginSchema = z.object({

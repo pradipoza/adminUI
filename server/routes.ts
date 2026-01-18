@@ -6,7 +6,7 @@ import passport from "passport";
 import { documentService } from "./services/documentService";
 import { openaiService } from "./services/openaiService";
 import multer from "multer";
-import { insertDocumentSchema, insertMessageSchema, insertMessage1Schema, insertStudentSchema, loginSchema, updateProfileSchema } from "@shared/schema";
+import { insertDocumentSchema, insertMessageSchema, insertMessage1Schema, insertStudentSchema, loginSchema, updateProfileSchema, updatePaymentSchema, insertPaymentSchema } from "@shared/schema";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -35,6 +35,14 @@ function isAuthenticated(req: any, res: any, next: any) {
     return next();
   }
   res.status(401).json({ message: "Unauthorized" });
+}
+
+// Super admin middleware
+function isSuperAdmin(req: any, res: any, next: any) {
+  if (req.isAuthenticated() && req.user?.role === 'super_admin') {
+    return next();
+  }
+  res.status(403).json({ message: "Forbidden - Super admin access required" });
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -389,6 +397,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error in chat:", error);
       res.status(500).json({ message: "Failed to process chat message" });
+    }
+  });
+
+  // ========== SUPER ADMIN ROUTES ==========
+  
+  // Super admin analytics
+  app.get("/api/admin/analytics", isSuperAdmin, async (req, res) => {
+    try {
+      const analytics = await storage.getSuperAdminAnalytics();
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching super admin analytics:", error);
+      res.status(500).json({ message: "Failed to fetch analytics" });
+    }
+  });
+
+  // Get all clients
+  app.get("/api/admin/clients", isSuperAdmin, async (req, res) => {
+    try {
+      const clients = await storage.getAllClients();
+      res.json(clients);
+    } catch (error) {
+      console.error("Error fetching clients:", error);
+      res.status(500).json({ message: "Failed to fetch clients" });
+    }
+  });
+
+  // Get all payments (super admin only)
+  app.get("/api/admin/payments", isSuperAdmin, async (req, res) => {
+    try {
+      const clientId = req.query.clientId as string | undefined;
+      const payments = await storage.getPayments(clientId);
+      res.json(payments);
+    } catch (error) {
+      console.error("Error fetching payments:", error);
+      res.status(500).json({ message: "Failed to fetch payments" });
+    }
+  });
+
+  // Create payment record (super admin only)
+  app.post("/api/admin/payments", isSuperAdmin, async (req, res) => {
+    try {
+      const validatedData = insertPaymentSchema.parse(req.body);
+      const payment = await storage.createPayment(validatedData);
+      res.status(201).json(payment);
+    } catch (error) {
+      console.error("Error creating payment:", error);
+      res.status(500).json({ message: "Failed to create payment" });
+    }
+  });
+
+  // Update payment (super admin only)
+  app.patch("/api/admin/payments/:id", isSuperAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = updatePaymentSchema.parse(req.body);
+      const payment = await storage.updatePayment(id, validatedData);
+      res.json(payment);
+    } catch (error) {
+      console.error("Error updating payment:", error);
+      res.status(500).json({ message: "Failed to update payment" });
+    }
+  });
+
+  // Get setting (super admin only)
+  app.get("/api/admin/settings/:key", isSuperAdmin, async (req, res) => {
+    try {
+      const key = req.params.key;
+      const setting = await storage.getSetting(key);
+      res.json(setting || { key, value: null });
+    } catch (error) {
+      console.error("Error fetching setting:", error);
+      res.status(500).json({ message: "Failed to fetch setting" });
+    }
+  });
+
+  // Update setting (super admin only)
+  app.post("/api/admin/settings/:key", isSuperAdmin, async (req, res) => {
+    try {
+      const key = req.params.key;
+      const { value } = req.body;
+      const setting = await storage.setSetting(key, value);
+      res.json(setting);
+    } catch (error) {
+      console.error("Error updating setting:", error);
+      res.status(500).json({ message: "Failed to update setting" });
+    }
+  });
+
+  // Upload QR code image (super admin only)
+  app.post("/api/admin/upload-qr", isSuperAdmin, upload.single('qrImage'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      // Convert to base64 for storage
+      const base64Image = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+      
+      await storage.setSetting('payment_qr_code', base64Image);
+      
+      res.json({ message: "QR code uploaded successfully", url: base64Image });
+    } catch (error) {
+      console.error("Error uploading QR code:", error);
+      res.status(500).json({ message: "Failed to upload QR code" });
+    }
+  });
+
+  // ========== CLIENT ROUTES ==========
+
+  // Get client's own payment info
+  app.get("/api/client/payments", isAuthenticated, async (req: any, res) => {
+    try {
+      const payments = await storage.getPayments(req.user.id);
+      const paymentDue = await storage.getClientPaymentDue(req.user.id);
+      res.json({ payments, ...paymentDue });
+    } catch (error) {
+      console.error("Error fetching client payments:", error);
+      res.status(500).json({ message: "Failed to fetch payments" });
+    }
+  });
+
+  // Get payment QR code (for clients)
+  app.get("/api/client/payment-qr", isAuthenticated, async (req, res) => {
+    try {
+      const setting = await storage.getSetting('payment_qr_code');
+      res.json({ qrCode: setting?.value || null });
+    } catch (error) {
+      console.error("Error fetching QR code:", error);
+      res.status(500).json({ message: "Failed to fetch QR code" });
     }
   });
 
